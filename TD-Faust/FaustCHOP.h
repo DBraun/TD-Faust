@@ -47,10 +47,10 @@ which is MIT-Licensed.
 #endif
 
 #ifndef MAX_INPUTS
-#define MAX_INPUTS 12
+#define MAX_INPUTS 256
 #endif
 #ifndef MAX_OUTPUTS
-#define MAX_OUTPUTS 12
+#define MAX_OUTPUTS 256
 #endif
 
 std::list<GUI*> GUI::fGuiList;
