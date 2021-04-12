@@ -1,3 +1,9 @@
+Backup/*
+Release/
+Debug/
+build/*
+my_dsp.xml
+
 # Prerequisites
 *.d
 
