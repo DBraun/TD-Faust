@@ -73,7 +73,7 @@ list(FILTER llvm_components EXCLUDE REGEX ".*LLVM-C\.lib")
 
 ## If you're seeing linker errors, uncomment this message line and 
 ## make sure it's printing many paths to .lib files.
-#message(llvm_components: ${llvm_components})
+# message(llvm_components: ${llvm_components})
 string(STRIP "${llvm_components}" llvm_components)
 target_link_libraries(dynamiclib PRIVATE ${llvm_components})
 
