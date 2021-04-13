@@ -1,4 +1,5 @@
 import math
+import re
 
 def legal_parname(name: str):
 
@@ -6,13 +7,25 @@ def legal_parname(name: str):
 	Make strings that can be used as custom parameters in TouchDesigner.
 	See https://docs.derivative.ca/Custom_Parameters#Naming_Conventions
 	"""
+	name = re.sub(r"\W*", "", name, count=0, flags=0).replace('_', '')
 
-	name = name.strip().replace('_', '').replace(' ', '').replace('.', '')
+	firstChar = name[0].upper()
 
-	name = name.lower()
-	name = name[0].upper() + name[1:]
+	# If the first char is a digit, precede it by a capital P
+	firstChar = re.sub(r"\d", "P" + firstChar, firstChar)
+
+	name = firstChar + name.lower()[1:]
+
 	return name
 
+def legal_chan_name(name: str):
+
+	# Remove parentheses.
+	# Note that this regex must be done exactly the same in C++ in the FaustCHOP_UI addParameter method.
+
+	name = re.sub(r"[\(\)]*", "", name).replace(' ', '_')
+	
+	return name
 
 def text_to_num(text: str):
 
@@ -66,7 +79,7 @@ def add_ui(path: str, node, container):
 	
 	if label is not None:
 		label = label.text
-		path += '/' + label
+		path += '/' + legal_chan_name(label)
 	else:
 		label = ''
 	
@@ -108,7 +121,7 @@ def add_ui(path: str, node, container):
 			activewidgets[widgetid]['par'] = par[0]
 			activewidgets[widgetid]['parname'] = parname
 			activewidgets[widgetid]['parlabel'] = parlabel
-			activewidgets[widgetid]['faust_path'] = path + '/' + widget.find('label').text
+			activewidgets[widgetid]['faust_path'] = path + '/' + legal_chan_name(widget.find('label').text)
 
 		else:
 			# the par was already added to base_pars
@@ -162,7 +175,7 @@ def add_ui(path: str, node, container):
 	for i, group in enumerate(node.findall('group')):
 	
 		# create a new container for the group
-		newContainer = container.create(containerCOMP, group.find('label').text)
+		newContainer = container.create(containerCOMP, tdu.legalName(group.find('label').text))
 		newContainer.nodeX = i*250
 		newContainer.viewer = True
 	
