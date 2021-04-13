@@ -12,6 +12,10 @@ TD-Faust is like a very basic version of the online [FAUST IDE](https://faustide
 * It can automatically generate a UI of native TouchDesigner elements based on the FAUST code. (Help make this better!)
 * It enables [polyphonic MIDI](https://faustdoc.grame.fr/manual/midi/) control with MIDI hardware.
 
+Demo:
+
+[![Demo Video Screenshot](https://img.youtube.com/vi/0qi2lp_TgE0/0.jpg)](https://www.youtube.com/watch?v=0qi2lp_TgE0 "FAUST in TouchDesigner (Audio Coding Demo)")
+
 ## New to FAUST?
 
 * Browse the suggested [Documentation and Resources](https://github.com/grame-cncm/faust#documentation-and-resources).
