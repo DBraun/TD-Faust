@@ -117,13 +117,20 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "$<$<CONFIG:Release>:"
         "NDEBUG"
     ">"
-    "WIN32;"
-    "_WIN32;"
-    "_WINDOWS;"
     "_USRDLL;"
-    "__WINDOWS_DS__"
     "FAUSTCHOP_EXPORTS"
 )
+
+if(MSVC)
+
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        "WIN32;"
+        "_WIN32;"
+        "_WINDOWS;"
+        "__WINDOWS_DS__"
+    )
+
+endif()
 
 ################################################################################
 # Compile and link options
@@ -154,10 +161,11 @@ if(MSVC)
     )
 endif()
 
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
-                      VS_DEBUGGER_COMMAND "C:\\Program Files\\Derivative\\TouchDesigner\\bin\\TouchDesigner.exe"
-                      VS_DEBUGGER_COMMAND_ARGUMENTS "..\\$(ProjectName).toe")
+if(MSVC)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+                          VS_DEBUGGER_COMMAND "C:\\Program Files\\Derivative\\TouchDesigner\\bin\\TouchDesigner.exe"
+                          VS_DEBUGGER_COMMAND_ARGUMENTS "..\\$(ProjectName).toe")
+endif()
 
 # The following step will create a post-build event that copies the custom DLL to
 # the Plugins folder.
