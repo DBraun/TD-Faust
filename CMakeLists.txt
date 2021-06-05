@@ -65,6 +65,11 @@ set(ALL_FILES
 
 add_library(TD-Faust SHARED ${ALL_FILES})
 
+set_target_properties(TD-Faust PROPERTIES
+            CXX_STANDARD 17
+            CXX_EXTENSIONS OFF
+            )
+
 ## Link TD-Faust with faustlib
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/architecture)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler)
@@ -132,6 +137,10 @@ if(MSVC)
 
 endif()
 
+if(APPLE)
+target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
+endif()
+
 ################################################################################
 # Compile and link options
 ################################################################################
@@ -169,7 +178,7 @@ endif()
 
 # The following step will create a post-build event that copies the custom DLL to
 # the Plugins folder.
-if (MSVC)
+
   add_custom_command(TARGET ${PROJECT_NAME}
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -180,7 +189,6 @@ if (MSVC)
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:dynamiclib>"
                      ${CMAKE_SOURCE_DIR}/Plugins)
-endif (MSVC)
 
 # Install library
 INSTALL(TARGETS TD-Faust
