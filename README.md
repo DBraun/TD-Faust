@@ -4,7 +4,6 @@
 ## Overview
 
 TD-Faust is like a very basic version of the online [FAUST IDE](https://faustide.grame.fr/).
-* Only tested on Windows (If you try OSX, tell us!).
 * It enables FAUST code to run inside TouchDesigner.
 * Up to 256 channels of input and 256 channels of output.
 * Pick your own block size and sample rate.
