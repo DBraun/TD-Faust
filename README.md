@@ -32,9 +32,9 @@ Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. D
 
 ### macOS
 
-Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy the `.lib` files from `Faust-2.30.5/share/faust/` to either `/usr/local/share/faust` or `/usr/share/faust`.
+Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy the `.lib` files from `Faust-2.30.5/share/faust/` to `/usr/local/share/faust`.
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download `libfaust.2.dylib` and `libTD-Faust.dylib`. Place them in this repository's `Plugins` folder. That's all. The remaining instructions are for compiling.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download `libfaust.2.dylib` and `TD-Faust.plugin`. Place them in this repository's `Plugins` folder. That's all. The remaining instructions are for compiling.
 
 ## Full Compilation
 
@@ -72,7 +72,7 @@ In root of the TD-Faust repo:
 ```bash
 cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=/path/to/TD-Faust/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm
 ```
-Then open `build/TD-Faust.xcodeproj` and build.
+Then open `build/TD-Faust.xcodeproj` and build. You will need to rename `libfaust.2.13.15.dylib` to `libfaust.2.dylib` and optionally `TD-Faust.bundle` to `TD-Faust.plugin`.
 
 ## Licenses / Thank You
 

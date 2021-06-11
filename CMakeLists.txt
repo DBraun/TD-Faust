@@ -63,8 +63,6 @@ set(ALL_FILES
     ${Sources}
 )
 
-
-
 add_library(TD-Faust MODULE ${ALL_FILES})
 set_target_properties(TD-Faust PROPERTIES BUNDLE TRUE)
 set_target_properties(TD-Faust PROPERTIES
@@ -75,7 +73,7 @@ set_target_properties(${OPNAME} PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(${OPNAME} PROPERTIES PREFIX "")
 
 if (APPLE)	
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -stdlib=libc++")
 endif()
 
 ## Link TD-Faust with faustlib
@@ -187,11 +185,12 @@ endif()
 # The following step will create a post-build event that copies the custom DLL to
 # the Plugins folder.
 if(APPLE)
-  add_custom_command(TARGET ${PROJECT_NAME}
-                     POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "$<TARGET_FILE:TD-Faust>"
-                     ${CMAKE_SOURCE_DIR}/Plugins/${PROJECT_NAME}.bundle)
+## For some reason if you move the file like this, it fails to load in TD.
+#  add_custom_command(TARGET ${PROJECT_NAME}
+#                     POST_BUILD
+#                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#                     "$<TARGET_FILE:TD-Faust>"
+#                     ${CMAKE_SOURCE_DIR}/Plugins/${PROJECT_NAME}.plugin)
 else()
   add_custom_command(TARGET ${PROJECT_NAME}
                      POST_BUILD
