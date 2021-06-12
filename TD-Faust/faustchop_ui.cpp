@@ -48,12 +48,11 @@ public:
         // in script_build_ui.py
 
         std::string s(label);
-        std::regex sub_string("[\(\)]*");   // match parentheses.
 
-        // replace unsafe characters with blanks.
-        std::string safeLabel = std::regex_replace(s, sub_string, "");
+        // remove open and closed parentheses.
+        std::string safeLabel = std::regex_replace(s, std::regex("[\(\)]+"), "");
 
-        // replace space with underscore
+        // replace spaces with a single underscore
         safeLabel = std::regex_replace(safeLabel, std::regex("\\s+"), "_");
 
         APIUI::addParameter(safeLabel.c_str(),
