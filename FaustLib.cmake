@@ -51,7 +51,7 @@ set(FIR_BACKEND    OFF                       CACHE STRING  "Include FIR backend"
 set(INTERP_BACKEND OFF                       CACHE STRING  "Include INTERPRETER backend" FORCE)
 set(JAVA_BACKEND   OFF                       CACHE STRING  "Include JAVA backend"        FORCE)
 set(JS_BACKEND     OFF                       CACHE STRING  "Include JAVASCRIPT backend"  FORCE)
-set(LLVM_BACKEND   COMPILER STATIC DYNAMIC   CACHE STRING  "Include LLVM backend"        FORCE)
+set(LLVM_BACKEND   COMPILER DYNAMIC          CACHE STRING  "Include LLVM backend"        FORCE)
 set(OLDCPP_BACKEND OFF                       CACHE STRING  "Include old CPP backend"     FORCE)
 set(RUST_BACKEND   OFF                       CACHE STRING  "Include RUST backend"        FORCE)
 set(WASM_BACKEND   OFF                       CACHE STRING  "Include WASM backend"        FORCE)
@@ -62,12 +62,33 @@ add_subdirectory(./thirdparty/faust/build EXCLUDE_FROM_ALL)
 if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY COMPILE_FLAGS " /EHsc /D WIN32 -D_SCL_SECURE_NO_WARNINGS")
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
+else()
+
+include(FindCurses)
+find_package(ZLIB 1.2.3 REQUIRED)
+# "/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/lib/libz.tbd"
+
+## Link the Pure Data external with llvm
+find_package(LLVM REQUIRED CONFIG)
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+add_definitions(${LLVM_DEFINITIONS})
+
+execute_process(COMMAND ${LLVM_DIR_TEMP}/../../../bin/llvm-config --libs all
+                OUTPUT_VARIABLE llvm_components)
+## If you're seeing linker errors, uncomment this message line and 
+## make sure it's printing many paths to .lib files.
+message(llvm_components: ${llvm_components})
+string(STRIP "${llvm_components}" llvm_components)
+include_directories(${LLVM_INCLUDE_DIRS})
+message("LLVM_INCLUDE_DIRS: " ${LLVM_INCLUDE_DIRS})
+target_link_directories(dynamiclib PRIVATE "${LLVM_INCLUDE_DIRS}/../lib")
+target_link_libraries(dynamiclib PRIVATE "${llvm_components}" ${CURSES_LIBRARIES} ZLIB::ZLIB)
 endif()
 
-execute_process(COMMAND ${LLVM_DIR}/../../../Release/bin/llvm-config --libfiles
-                OUTPUT_VARIABLE llvm_components)
-
+if(MSVC)
 FILE(GLOB llvm_components ${LLVM_DIR}/../../../Release/lib/*.lib)
+
 # Todo: why does this one need to be excluded?
 list(FILTER llvm_components EXCLUDE REGEX ".*LLVM-C\.lib")
 
@@ -76,6 +97,7 @@ list(FILTER llvm_components EXCLUDE REGEX ".*LLVM-C\.lib")
 # message(llvm_components: ${llvm_components})
 string(STRIP "${llvm_components}" llvm_components)
 target_link_libraries(dynamiclib PRIVATE ${llvm_components})
+endif()
 
 ## Restore llvm directory
 if(DEFINED LLVM_DIR)

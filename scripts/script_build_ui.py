@@ -20,10 +20,15 @@ def legal_parname(name: str):
 
 def legal_chan_name(name: str):
 
+	# NB: The steps in this method must match the steps in the C++ FaustCHOPUI::addParameter
+
 	# Remove parentheses.
 	# Note that this regex must be done exactly the same in C++ in the FaustCHOP_UI addParameter method.
 
-	name = re.sub(r"[\(\)]*", "", name).replace(' ', '_')
+	name = re.sub(r"[\(\)]*", "", name)
+
+	# Replace groups of white space with a single underscore
+	name = re.sub(r"\s+", "_", name)
 	
 	return name
 

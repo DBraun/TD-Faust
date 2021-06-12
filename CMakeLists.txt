@@ -63,7 +63,18 @@ set(ALL_FILES
     ${Sources}
 )
 
-add_library(TD-Faust SHARED ${ALL_FILES})
+add_library(TD-Faust MODULE ${ALL_FILES})
+set_target_properties(TD-Faust PROPERTIES BUNDLE TRUE)
+set_target_properties(TD-Faust PROPERTIES
+            CXX_STANDARD 17
+            CXX_EXTENSIONS OFF
+            )
+set_target_properties(${OPNAME} PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(${OPNAME} PROPERTIES PREFIX "")
+
+if (APPLE)	
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -stdlib=libc++")
+endif()
 
 ## Link TD-Faust with faustlib
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/architecture)
@@ -132,6 +143,10 @@ if(MSVC)
 
 endif()
 
+if(APPLE)
+target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
+endif()
+
 ################################################################################
 # Compile and link options
 ################################################################################
@@ -169,21 +184,28 @@ endif()
 
 # The following step will create a post-build event that copies the custom DLL to
 # the Plugins folder.
-if (MSVC)
+if(APPLE)
+## For some reason if you move the file like this, it fails to load in TD.
+#  add_custom_command(TARGET ${PROJECT_NAME}
+#                     POST_BUILD
+#                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#                     "$<TARGET_FILE:TD-Faust>"
+#                     ${CMAKE_SOURCE_DIR}/Plugins/${PROJECT_NAME}.plugin)
+else()
   add_custom_command(TARGET ${PROJECT_NAME}
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:TD-Faust>"
                      ${CMAKE_SOURCE_DIR}/Plugins)
+endif()
   add_custom_command(TARGET ${PROJECT_NAME}
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:dynamiclib>"
                      ${CMAKE_SOURCE_DIR}/Plugins)
-endif (MSVC)
 
 # Install library
-INSTALL(TARGETS TD-Faust
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} )
+#INSTALL(TARGETS TD-Faust
+#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} )
