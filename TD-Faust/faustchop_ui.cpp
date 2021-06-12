@@ -54,7 +54,7 @@ public:
         std::string safeLabel = std::regex_replace(s, sub_string, "");
 
         // replace space with underscore
-        safeLabel = std::regex_replace(s, std::regex("\s"), "_");
+        safeLabel = std::regex_replace(safeLabel, std::regex("\\s+"), "_");
 
         APIUI::addParameter(safeLabel.c_str(),
             zone, init, min, max, step, type

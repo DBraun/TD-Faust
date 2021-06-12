@@ -5,6 +5,7 @@
 
 TD-Faust is like a very basic version of the online [FAUST IDE](https://faustide.grame.fr/).
 * It enables FAUST code to run inside TouchDesigner.
+* Tested on Windows and macOS.
 * Up to 256 channels of input and 256 channels of output.
 * Pick your own block size and sample rate.
 * Any of the standard [FAUST libraries](https://faustlibraries.grame.fr/) can be used.
@@ -72,7 +73,11 @@ In root of the TD-Faust repo:
 ```bash
 cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=/path/to/TD-Faust/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm
 ```
-Then open `build/TD-Faust.xcodeproj` and build. You will need to rename `libfaust.2.13.15.dylib` to `libfaust.2.dylib` and optionally `TD-Faust.bundle` to `TD-Faust.plugin`.
+Then open `build/TD-Faust.xcodeproj` and build `ALL_BUILD`. You will need to rename `libfaust.2.13.15.dylib` to `libfaust.2.dylib` and optionally `TD-Faust.bundle` to `TD-Faust.plugin`.
+
+## Tutorial
+
+You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is automatically added for convenience.
 
 ## Licenses / Thank You
 
