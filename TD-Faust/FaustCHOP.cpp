@@ -557,12 +557,14 @@ FaustCHOP::execute(CHOP_Output* output,
 
 					int velo = int(127 * midiInput->getChannelData(pitch)[i]);
 
-					if (m_midiBuffer[pitch] != velo) {
+					int pastVel = m_midiBuffer[pitch];
 
-						if (velo > 0 && m_midiBuffer <= 0) {
+					if (pastVel != velo) {
+
+						if (velo > 0 && pastVel <= 0) {
 							m_dsp_poly->keyOn(0, pitch, velo);
 						}
-						else if (velo <= 0 && m_midiBuffer > 0) {
+						else if (velo <= 0 && pastVel > 0) {
 							m_dsp_poly->keyOff(0, pitch, velo);
 						}
 
