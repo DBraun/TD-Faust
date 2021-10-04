@@ -87,6 +87,7 @@ public:
 	virtual void		pulsePressed(const char* name, void* reserved1) override;
 
 	void clear();
+	void clearMIDI();
 	void clearBufs();
 	void allocate(int inputChannels, int outputChannels, int numSamples);
 	bool eval(const string& code);
@@ -112,22 +113,28 @@ private:
 	// sample rate
 	float m_srate;
 
+#ifdef WIN32
+	HANDLE guiUpdateMutex; // todo: enable mutex on linux and macOS
+#endif
+
 	// code text (pre any modifications)
 	string m_code;
+	const char* m_faustLibrariesPath;
 	// llvm factory
-	llvm_dsp_factory* m_factory;
-	llvm_dsp_poly_factory* m_poly_factory;
+	llvm_dsp_factory* m_factory = nullptr;
+	llvm_dsp_poly_factory* m_poly_factory = nullptr;
 	// faust DSP object
-	dsp* m_dsp;
-	dsp_poly* m_dsp_poly;
+	dsp* m_dsp = nullptr;
+	dsp_poly* m_dsp_poly = nullptr;
 	// faust compiler error string
 	string m_errorString;
 	// auto import
 	string m_autoImport;
+	bool m_groupVoices = true;
 
 	// faust input buffer
-	FAUSTFLOAT** m_input;
-	FAUSTFLOAT** m_output;
+	FAUSTFLOAT** m_input = nullptr;
+	FAUSTFLOAT** m_output = nullptr;
 	int allocatedSize = 0;
 
 	// input and output
@@ -143,4 +150,7 @@ private:
 	// UI
 	MidiUI* m_midi_ui;
 	FaustCHOPUI* m_ui;
+
+	//
+	int m_midiBuffer[127]; // store velocity for each pitch
 };

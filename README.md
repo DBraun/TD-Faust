@@ -48,11 +48,12 @@ git submodule update in this repo: `git submodule update --init --recursive`. Th
 #### Windows
 ```bash
 cd thirdparty/llvm-project/llvm
-cmake -Bbuild -G "Visual Studio 16 2019" -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64`
+cmake -Bbuild -G "Visual Studio 16 2019" -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64
 ```
 (Note that the MD flags build a dynamic library, whereas MT would have built a static library.)
 
-Then open `thirdparty/llvm-project/llvm/build/LLVM.sln` and build in Release/64. This will take at least 20 minutes.
+Then open `thirdparty/llvm-project/llvm/build/LLVM.sln` and build in Release/64. This will take at least 20 minutes. You can also do this from the command line (x64 Native Tools Command Prompt for VS 2019) instead:
+`msbuild thirdparty/llvm-project/llvm/build/LLVM.sln /property:Configuration=Release`
 
 #### macOS
 Go to [https://github.com/llvm/llvm-project/releases/tag/llvmorg-12.0.0](https://github.com/llvm/llvm-project/releases/tag/llvmorg-12.0.0) and download `clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz` to this repository's `thirdparty` folder. Unzip it into a directory.

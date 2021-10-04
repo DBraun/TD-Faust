@@ -68,9 +68,7 @@ extern "C"
 
 		// This CHOP can work with 0 inputs
 		info->customOPInfo.minInputs = 0;
-
-		// It can accept up to 1 input though, which changes it's behavior
-		info->customOPInfo.maxInputs = 2;
+		info->customOPInfo.maxInputs = 3;
 	}
 
 	DLLEXPORT
@@ -117,6 +115,13 @@ FaustCHOP::FaustCHOP(const OP_NodeInfo* info) : myNodeInfo(info)
         import(\"stdfaust.lib\");\n";
 
 	myExecuteCount = 0;
+
+#ifdef WIN32
+	// At the start of every process
+	guiUpdateMutex = CreateMutex(NULL, FALSE, L"Faust gui::update Mutex");  // todo: enable mutex on linux and macOS
+#endif
+
+	clearMIDI();
 }
 
 FaustCHOP::~FaustCHOP()
@@ -190,6 +195,21 @@ FaustCHOP::clear()
 	deleteAllDSPFactories();
 	m_factory = NULL;
 	m_poly_factory = NULL;
+
+	clearMIDI();
+}
+
+void
+FaustCHOP::clearMIDI()
+{
+	for (int i = 0; i < 127; i++) {
+		m_midiBuffer[i] = 0;
+	}
+
+	if (m_dsp_poly) {
+		m_dsp_poly->instanceClear();
+	}
+
 }
 
 void
@@ -234,6 +254,8 @@ FaustCHOP::allocate(int inputChannels, int outputChannels, int numSamples)
 	}
 }
 
+#define FAUSTPROCESSOR_FAIL_COMPILE clear(); return false;
+
 bool
 FaustCHOP::eval(const string& code)
 {
@@ -241,8 +263,15 @@ FaustCHOP::eval(const string& code)
 	clear();
 
 	// arguments
-	const int argc = 0;
-	const char** argv = NULL;
+	int argc = 0;
+	const char** argv = new const char* [argc];
+	if (strcmp(m_faustLibrariesPath, "") != 0) {
+		argc = 2;
+		argv = new const char* [argc];
+		argv[0] = "-I";
+		argv[1] = m_faustLibrariesPath;
+	}
+
 	// optimization level
 	const int optimize = -1;
 
@@ -250,7 +279,7 @@ FaustCHOP::eval(const string& code)
 	m_code = code;
 
 	// auto import
-	string theCode = m_autoImport + "\n" + code;
+	const string theCode = m_autoImport + "\n" + code;
 
 	// create new factory
 	if (m_polyphony_enable) {
@@ -262,14 +291,18 @@ FaustCHOP::eval(const string& code)
 			argc, argv, "", m_errorString, optimize);
 	}
 
+	if (argv) {
+		for (int i = 0; i < argc; i++) {
+			argv[i] = NULL;
+		}
+		argv = NULL;
+	}
+
 	// check for error
 	if (m_errorString != "") {
 		// output error
 		cerr << "[Faust]: " << m_errorString << endl;
-		// clear
-		clear();
-		// done
-		return false;
+		FAUSTPROCESSOR_FAIL_COMPILE
 	}
 
 	//// print where faustlib is looking for stdfaust.lib and the other lib files.
@@ -290,11 +323,10 @@ FaustCHOP::eval(const string& code)
 
 	if (m_polyphony_enable) {
 		// (false, true) works
-		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, false, false);
+		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, true, m_groupVoices);
 		if (!m_dsp_poly) {
 			std::cerr << "Cannot create instance " << std::endl;
-			clear();
-			return false;
+			FAUSTPROCESSOR_FAIL_COMPILE
 		}
 		if (m_midi_enable) {
 			m_midi_handler.addMidiIn(m_dsp_poly);
@@ -304,26 +336,22 @@ FaustCHOP::eval(const string& code)
 		m_dsp = m_factory->createDSPInstance();
 		if (!m_dsp) {
 			std::cerr << "Cannot create instance " << std::endl;
-			clear();
-			return false;
+			FAUSTPROCESSOR_FAIL_COMPILE
 		}
 	}
 
 	dsp* theDsp = m_polyphony_enable ? m_dsp_poly : m_dsp;
 
 	// make new UI
-	UI* theUI = nullptr;
-	if (m_polyphony_enable && m_midi_enable)
+	if (m_midi_enable)
 	{
 		m_midi_ui = new MidiUI(&m_midi_handler);
-		theUI = m_midi_ui;
-	} else {
-		m_ui = new FaustCHOPUI();
-		theUI = m_ui;
+		theDsp->buildUserInterface(m_midi_ui);
 	}
 
 	// build ui
-	theDsp->buildUserInterface(theUI);
+	m_ui = new FaustCHOPUI();
+	theDsp->buildUserInterface(m_ui);
 
 	// get channels
 	int inputs = theDsp->getNumInputs();
@@ -441,22 +469,32 @@ FaustCHOP::execute(CHOP_Output* output,
 		m_code = std::string(dat->getCell(0, 0));
 	}
 
+	m_faustLibrariesPath = inputs->getParString("Faustlibrariespath");
+
 	m_nvoices = inputs->getParInt("Nvoices");
 	m_midi_enable = inputs->getParDouble("Midi");
 	m_polyphony_enable = inputs->getParDouble("Polyphony");
+	m_groupVoices = inputs->getParInt("Groupvoices");
 
 	if ((m_numOutputChannels != output->numChannels) || output->numChannels == 0) {
 		return;
 	}
 
-	const OP_CHOPInput* chopInput = inputs->getInputCHOP(0);
+	const OP_CHOPInput* audioInput = inputs->getInputCHOP(0);
 	const OP_CHOPInput* controlInput = inputs->getInputCHOP(1);
+	const OP_CHOPInput* midiInput = inputs->getInputCHOP(2);
 
 	int blockSize = (int) inputs->getParDouble("Blocksize");
 
-	if (chopInput)
+	if (m_polyphony_enable && midiInput && m_dsp_poly)
 	{
-		if (chopInput->numChannels < m_numInputChannels) {
+		// We have to make the block size one so that we can step through the MIDI input one at a time.
+		blockSize = 1;
+	}
+
+	if (audioInput)
+	{
+		if (audioInput->numChannels < m_numInputChannels) {
 			// todo: throw error
 			return;
 		}
@@ -475,6 +513,36 @@ FaustCHOP::execute(CHOP_Output* output,
 					ind = i % controlInput->numSamples;
 					setParam(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[ind]);
 				}
+
+
+				// If polyphony is enabled and we're grouping voices,
+				// several voices might share the same parameters in a group.
+				// Therefore we have to call updateAllGuis to update all dependent parameters.
+				if (m_nvoices > 0 && m_polyphony_enable && m_groupVoices) {
+#ifdef WIN32
+					// When you want to access shared memory:
+					DWORD dwWaitResult = WaitForSingleObject(guiUpdateMutex, INFINITE);
+
+					if (dwWaitResult == WAIT_OBJECT_0 || dwWaitResult == WAIT_ABANDONED)
+					{
+						if (dwWaitResult == WAIT_ABANDONED)
+						{
+							// todo:
+							// Shared memory is maybe in inconsistent state because other program
+							// crashed while holding the mutex. Check the memory for consistency
+						}
+
+						// Have Faust update all GUIs.
+						GUI::updateAllGuis();
+
+						// After this line other processes can access shared memory
+						ReleaseMutex(guiUpdateMutex);
+					}
+#else
+					GUI::updateAllGuis(); // todo: enable mutex on linux and macOS
+#endif
+				}
+
 			}
 
 			int numSamples = min(output->numSamples - i, blockSize);
@@ -483,19 +551,39 @@ FaustCHOP::execute(CHOP_Output* output,
 				allocate(m_numInputChannels, m_numOutputChannels, numSamples);
 			}
 
-			if (chopInput) {
+			if (midiInput && m_polyphony_enable && m_dsp_poly && (i < midiInput->numSamples)) {
 
+				for (int pitch = 0; pitch < std::min(127, midiInput->numChannels); pitch++) {
+
+					int velo = int(127 * midiInput->getChannelData(pitch)[i]);
+
+					if (m_midiBuffer[pitch] != velo) {
+
+						if (velo > 0 && m_midiBuffer <= 0) {
+							m_dsp_poly->keyOn(0, pitch, velo);
+						}
+						else if (velo <= 0 && m_midiBuffer > 0) {
+							m_dsp_poly->keyOff(0, pitch, velo);
+						}
+
+						m_midiBuffer[pitch] = velo;
+					}
+
+				}
+			}
+
+			if (audioInput) {
 				for (int samp = 0; samp < numSamples; samp++) {
 					for (int chan = 0; chan < m_numInputChannels; chan++)
 					{
 						// Make sure we don't read past the end of the CHOP input
-						ind = (i+samp) % chopInput->numSamples;
-						m_input[chan][samp] = chopInput->getChannelData(chan)[ind];
+						ind = (i+samp) % audioInput->numSamples;
+						m_input[chan][samp] = audioInput->getChannelData(chan)[ind];
 					}
 				}
 			}
 
-			if (chopInput) {
+			if (audioInput) {
 				theDsp->compute(numSamples, m_input, m_output);
 			}
 			else {
@@ -622,7 +710,7 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.maxSliders[0] = 16.;
 		np.clampMins[0] = true;
 		np.clampMaxes[0] = true;
-		np.maxValues[0] = 64.;
+		np.maxValues[0] = 512.;
 		np.minValues[0] = 1.;
 
 		OP_ParAppendResult res = manager->appendInt(np);
@@ -641,6 +729,18 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
+	// Group voices
+	{
+		OP_NumericParameter	np;
+
+		np.name = "Groupvoices";
+		np.label = "Group Voices";
+		np.defaultValues[0] = 1.;
+
+		OP_ParAppendResult res = manager->appendToggle(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
 	// chuck source code DAT
 	{
 		OP_StringParameter	sp;
@@ -651,6 +751,18 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		sp.defaultValue = "";
 
 		OP_ParAppendResult res = manager->appendDAT(sp);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// Faust libraries path
+	{
+		OP_NumericParameter	np;
+		OP_StringParameter sp;
+
+		sp.name = "Faustlibrariespath";
+		sp.label = "Faust Libraries Path";
+
+		OP_ParAppendResult res = manager->appendString(sp);
 		assert(res == OP_ParAppendResult::Success);
 	}
 
@@ -687,6 +799,17 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
+	// Clear MIDI
+	{
+		OP_NumericParameter	np;
+
+		np.name = "Clearmidi";
+		np.label = "Clear MIDI";
+
+		OP_ParAppendResult res = manager->appendPulse(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
 	//// menu parameter example
 	//{
 	//	OP_StringParameter	sp;
@@ -716,6 +839,11 @@ FaustCHOP::pulsePressed(const char* name, void* reserved1)
 	if (!strcmp(name, "Reset"))
 	{
 		clear();
+	}
+
+	if (!strcmp(name, "Clearmidi"))
+	{
+		clearMIDI();
 	}
 
 	if (!strcmp(name, "Setupuipulse"))
