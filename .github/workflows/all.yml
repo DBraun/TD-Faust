@@ -86,7 +86,7 @@ jobs:
     - name: download LLVM
       run: |
         cd thirdparty
-        curl https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz -o clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
+        curl https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz -OL clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
         tar -xf clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
 
     - name: Get CMake
