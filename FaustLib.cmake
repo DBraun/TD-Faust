@@ -64,6 +64,9 @@ if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
 else()
 
+find_package(SndFile REQUIRED)
+target_link_libraries(dynamiclib SndFile::sndfile)
+
 include(FindCurses)
 find_package(ZLIB 1.2.3 REQUIRED)
 # "/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/lib/libz.tbd"

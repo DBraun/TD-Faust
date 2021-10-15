@@ -104,6 +104,7 @@ FaustCHOP::FaustCHOP(const OP_NodeInfo* info) : myNodeInfo(info)
 	m_dsp_poly = NULL;
 	m_ui = NULL;
 	m_midi_ui = NULL;
+	m_soundUI = NULL;
 	// zero
 	m_input = NULL;
 	m_output = NULL;
@@ -191,6 +192,7 @@ FaustCHOP::clear()
 	SAFE_DELETE(m_ui);
 	SAFE_DELETE(m_dsp_poly);
 	SAFE_DELETE(m_midi_ui);
+	SAFE_DELETE(m_soundUI);
 
 	deleteAllDSPFactories();
 	m_factory = NULL;
@@ -283,11 +285,11 @@ FaustCHOP::eval(const string& code)
 
 	// create new factory
 	if (m_polyphony_enable) {
-		m_poly_factory = createPolyDSPFactoryFromString("TouchDesigner", theCode,
+		m_poly_factory = createPolyDSPFactoryFromString("my_dsp", theCode,
 			argc, argv, "", m_errorString, optimize);
 	}
 	else {
-		m_factory = createDSPFactoryFromString("TouchDesigner", theCode,
+		m_factory = createDSPFactoryFromString("my_dsp", theCode,
 			argc, argv, "", m_errorString, optimize);
 	}
 
@@ -353,6 +355,12 @@ FaustCHOP::eval(const string& code)
 	m_ui = new FaustCHOPUI();
 	theDsp->buildUserInterface(m_ui);
 
+	// build sound ui
+	if (strcmp(m_assetsDirPath, "") != 0) {
+		m_soundUI = new SoundUI(m_assetsDirPath, m_srate);
+		theDsp->buildUserInterface(m_soundUI);
+	}
+
 	// get channels
 	int inputs = theDsp->getNumInputs();
 	int outputs = theDsp->getNumOutputs();
@@ -415,15 +423,24 @@ FaustCHOP::setup_touchdesigner_ui()
 			cerr << "-----------------------------------------------------------" << endl;
 		}
 
-		const int argc = 1;
-		const char* argv[] = { "-xml" };
-		const string my_app = string("my_dsp");
-		string myError;
-		const string theCode = string(m_code);
+		const string theCode = m_autoImport + "\n" + m_code;
+
+		// arguments
+		int argc = 1;		
+		const char** argv = new const char* [argc];
+		argv[0] = "-xml";
+		if (strcmp(m_faustLibrariesPath, "") != 0) {
+			argc = 3;
+			argv = new const char* [argc];
+			argv[0] = "-xml";
+			argv[1] = "-I";
+			argv[2] = m_faustLibrariesPath;
+		}
 
 		// This saves to an XML file on disk (undesirable side-effect).
 		// It would be better to get it to a variable.
-		generateAuxFilesFromString(my_app, theCode, argc, argv, myError);
+		string myError;
+		generateAuxFilesFromString(string("my_dsp"), theCode, argc, argv, myError);
 
 		cerr << myError.c_str() << endl;
 	}
@@ -470,6 +487,7 @@ FaustCHOP::execute(CHOP_Output* output,
 	}
 
 	m_faustLibrariesPath = inputs->getParString("Faustlibrariespath");
+	m_assetsDirPath = inputs->getParString("Assetspath");
 
 	m_nvoices = inputs->getParInt("Nvoices");
 	m_midi_enable = inputs->getParDouble("Midi");
@@ -763,6 +781,18 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 
 		sp.name = "Faustlibrariespath";
 		sp.label = "Faust Libraries Path";
+
+		OP_ParAppendResult res = manager->appendString(sp);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// assets folder path
+	{
+		OP_NumericParameter	np;
+		OP_StringParameter sp;
+
+		sp.name = "Assetspath";
+		sp.label = "Assets Path";
 
 		OP_ParAppendResult res = manager->appendString(sp);
 		assert(res == OP_ParAppendResult::Success);

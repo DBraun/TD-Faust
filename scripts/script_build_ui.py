@@ -72,6 +72,7 @@ def add_ui(path: str, node, container):
 
 	global added_par_ids
 	global activewidgets
+	global passivewidgets
 	global page
 
 	layout = node.get('type') # hgroup, vgroup
@@ -84,12 +85,20 @@ def add_ui(path: str, node, container):
 	
 	if label is not None:
 		label = label.text
+		if label == '0x00':  # weird necessary step?
+		    # In faust you should have code like `declare name "MyInstrument";`
+		    # When this code is missing, `0x00` might show up here.
+		    # We replace it with the default `my_dsp` which is used in the FaustCHOP C++ code.
+			label = 'my_dsp'
 		path += '/' + legal_chan_name(label)
 	else:
 		label = ''
 	
 	for i, widgetref in enumerate(node.findall('widgetref')):
 		widgetid = widgetref.get('id')
+
+		if widgetid in passivewidgets:
+			continue
 		
 		# check if we've haven't already added it to the base
 		if widgetid not in added_par_ids:
@@ -205,8 +214,11 @@ for anOp in uic.ops('./*'):
 page = basepars.appendCustomPage('Custom')
 
 activewidgets = {}
+passivewidgets = {}
 for widget in ui.find('activewidgets').findall('widget'):
 	activewidgets[widget.get('id')] = {'widget': widget, 'parname': None}
+for widget in ui.find('passivewidgets').findall('widget'):
+	passivewidgets[widget.get('id')] = {'widget': widget}
 
 added_par_ids = set()
 

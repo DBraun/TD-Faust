@@ -32,9 +32,9 @@ which is MIT-Licensed.
 #include "faust/gui/MidiUI.h"
 #include "faust/gui/UI.h"
 #include "faust/gui/GUI.h"
+#include "faust/gui/SoundUI.h"
 //#include "faust/gui/httpdUI.h"
 //#include "faust/gui/OSCUI.h"
-//#include "faust/gui/SoundUI.h"
 //#include "faust/gui/GTKUI.h"
 
 #include "faust/midi/rt-midi.h"
@@ -120,6 +120,7 @@ private:
 	// code text (pre any modifications)
 	string m_code;
 	const char* m_faustLibrariesPath;
+	const char* m_assetsDirPath;
 	// llvm factory
 	llvm_dsp_factory* m_factory = nullptr;
 	llvm_dsp_poly_factory* m_poly_factory = nullptr;
@@ -148,8 +149,9 @@ private:
 	rt_midi m_midi_handler;
 
 	// UI
-	MidiUI* m_midi_ui;
-	FaustCHOPUI* m_ui;
+	MidiUI* m_midi_ui = nullptr;
+	FaustCHOPUI* m_ui = nullptr;
+	SoundUI* m_soundUI = nullptr;
 
 	//
 	int m_midiBuffer[127]; // store velocity for each pitch
