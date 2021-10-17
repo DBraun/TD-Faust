@@ -75,6 +75,8 @@ def add_ui(path: str, node, container):
 	global passivewidgets
 	global page
 
+	FAUST_UI = op.FAUST_UI
+
 	layout = node.get('type') # hgroup, vgroup
 	if layout == 'hgroup':
 		container.par.align = 'horizlr'
@@ -145,15 +147,15 @@ def add_ui(path: str, node, container):
 		widget = activewidgets[widgetid]['widget']
 		widgettype = widget.get('type')
 		if widgettype == 'vslider':
-			widget_source = op('masterSlider_vert')
+			widget_source = FAUST_UI.op('./masterSlider_vert')
 		elif widgettype == 'hslider':
-			widget_source = op('masterSlider_horz')
+			widget_source = FAUST_UI.op('./masterSlider_horz')
 		elif widgettype == 'button':
-			widget_source = op('masterButton')
+			widget_source = FAUST_UI.op('./masterButton')
 		elif widgettype == 'checkbox':
-			widget_source = op('masterCheckbox')
+			widget_source = FAUST_UI.op('./masterCheckbox')
 		elif widgettype == 'nentry':
-			widget_source = op('masterDropMenu')
+			widget_source = FAUST_UI.op('./masterDropMenu')
 		else:
 			raise ValueError('Unexpected widget type: ' + widgettype)
 
@@ -161,7 +163,7 @@ def add_ui(path: str, node, container):
 		for meta in widget.findall('meta'):
 			if meta.get('key') == 'style':
 				if meta.text == 'knob':
-					widget_source = op('masterKnob')
+					widget_source = FAUST_UI.op('./masterKnob')
 
 		new_widget = container.copy(widget_source, name=parname, includeDocked=True)
 		
@@ -169,7 +171,7 @@ def add_ui(path: str, node, container):
 		
 		# add label to the widget
 		if widgettype in ['hslider', 'vslider']:
-			if widget_source == op('masterKnob'):
+			if widget_source == FAUST_UI.op('./masterKnob'):
 				new_widget.par.Knoblabel = activewidgets[widgetid]['parlabel']
 			else:
 				new_widget.par.Sliderlabelnames = activewidgets[widgetid]['parlabel']
@@ -202,16 +204,19 @@ root = ET.fromstring(op('faust_ui_xml').text)
 
 ui = root.findall('ui')[0]
 
-basepars = op('base_pars')
+basepars = op('..')
 
-basepars.destroyCustomPars()
+for customPage in basepars.customPages:
+	if customPage.name == 'Control':
+		customPage.destroy()
+# Recreate page for Control
+page = basepars.appendCustomPage('Control')
 
 uic = op('ui_container')
 
 for anOp in uic.ops('./*'):
 	anOp.destroy()
 
-page = basepars.appendCustomPage('Custom')
 
 activewidgets = {}
 passivewidgets = {}

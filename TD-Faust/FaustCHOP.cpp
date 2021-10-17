@@ -64,6 +64,7 @@ extern "C"
 
 		// The opLabel is the text that will show up in the OP Create Dialog
 		info->customOPInfo.opLabel->setString("Faust CHOP");
+		info->customOPInfo.opIcon->setString("FAU");
 
 		// Information about the author of this OP
 		info->customOPInfo.authorName->setString("David Braun");
@@ -198,8 +199,10 @@ FaustCHOP::clear()
 	SAFE_DELETE(m_soundUI);
 
 	//deleteAllDSPFactories();  // don't actually do this!!
-	m_factory = NULL;
+	deleteDSPFactory(m_factory);
+	//deleteDSPFactory(m_poly_factory);
 	m_poly_factory = NULL;
+	m_factory = NULL;
 
 	clearMIDI();
 }
@@ -214,7 +217,6 @@ FaustCHOP::clearMIDI()
 	if (m_dsp_poly) {
 		m_dsp_poly->instanceClear();
 	}
-
 }
 
 void
@@ -307,7 +309,7 @@ FaustCHOP::eval(const string& code)
 	}
 
 	// check for error
-	if (m_errorString != "") {
+	if (strcmp(m_errorString.c_str(), "") != 0) {
 		// output error
 		cerr << "[Faust]: " << m_errorString << endl;
 		FAUSTPROCESSOR_FAIL_COMPILE
@@ -330,8 +332,8 @@ FaustCHOP::eval(const string& code)
 	}
 
 	if (m_polyphony_enable) {
-		// (false, true) works
-		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, true, m_groupVoices);
+		bool doDynamicallyAllocateVoices = false;
+		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, doDynamicallyAllocateVoices, m_groupVoices);
 		if (!m_dsp_poly) {
 			std::cerr << "Cannot create instance " << std::endl;
 			FAUSTPROCESSOR_FAIL_COMPILE
@@ -528,16 +530,12 @@ FaustCHOP::execute(CHOP_Output* output,
 
 	if (theDsp != NULL) {
 
-		int ind = 0;
-
 		for (int i = 0; i < output->numSamples; i += blockSize) {
 
-			if (controlInput) {
+			if (controlInput && i < controlInput->numSamples) {
 				for (int chan = 0; chan < controlInput->numChannels; chan++) {
-					ind = i % controlInput->numSamples;
-					setParam(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[ind]);
+					setParam(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[i]);
 				}
-
 
 				// If polyphony is enabled and we're grouping voices,
 				// several voices might share the same parameters in a group.
@@ -600,11 +598,10 @@ FaustCHOP::execute(CHOP_Output* output,
 
 			if (audioInput) {
 				for (int chan = 0; chan < m_numInputChannels; chan++)
-					for (int samp = 0; samp < numSamples; samp++) {
-					{
-						// Make sure we don't read past the end of the CHOP input
-						ind = (i+samp) % audioInput->numSamples;
-						m_input[chan][samp] = audioInput->getChannelData(chan)[ind];
+					// Make sure we don't read past the end of the CHOP input
+					for (int samp = 0; samp < numSamples && (i+samp) < audioInput->numSamples; samp++) {
+					{						
+						m_input[chan][samp] = audioInput->getChannelData(chan)[i+samp];
 					}
 				}
 			}
