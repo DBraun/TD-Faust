@@ -115,7 +115,7 @@ FaustCHOP::FaustCHOP(const OP_NodeInfo* info) : myNodeInfo(info)
 	m_numInputChannels = 0;
 	m_numOutputChannels = 0;
 	// auto import
-	m_autoImport = "// Faust Chugin auto import:\n \
+	m_autoImport = "// Faust CHOP auto import:\n \
         import(\"stdfaust.lib\");\n";
 
 	myExecuteCount = 0;
@@ -197,7 +197,7 @@ FaustCHOP::clear()
 	SAFE_DELETE(m_midi_ui);
 	SAFE_DELETE(m_soundUI);
 
-	deleteAllDSPFactories();
+	//deleteAllDSPFactories();  // don't actually do this!!
 	m_factory = NULL;
 	m_poly_factory = NULL;
 
@@ -269,12 +269,15 @@ FaustCHOP::eval(const string& code)
 
 	// arguments
 	int argc = 0;
-	const char** argv = new const char* [argc];
+	const char** argv;
 	if (strcmp(m_faustLibrariesPath, "") != 0) {
 		argc = 2;
 		argv = new const char* [argc];
 		argv[0] = "-I";
 		argv[1] = m_faustLibrariesPath;
+	}
+	else {
+		argv = new const char* [argc];
 	}
 
 	// optimization level
@@ -596,8 +599,8 @@ FaustCHOP::execute(CHOP_Output* output,
 			}
 
 			if (audioInput) {
-				for (int samp = 0; samp < numSamples; samp++) {
-					for (int chan = 0; chan < m_numInputChannels; chan++)
+				for (int chan = 0; chan < m_numInputChannels; chan++)
+					for (int samp = 0; samp < numSamples; samp++) {
 					{
 						// Make sure we don't read past the end of the CHOP input
 						ind = (i+samp) % audioInput->numSamples;
@@ -606,15 +609,10 @@ FaustCHOP::execute(CHOP_Output* output,
 				}
 			}
 
-			if (audioInput) {
-				theDsp->compute(numSamples, m_input, m_output);
-			}
-			else {
-				theDsp->compute(numSamples, nullptr, m_output);
-			}
+			theDsp->compute(numSamples, m_input, m_output);
 
-			for (int samp = 0; samp < numSamples; samp++) {
-				for (int chan = 0; chan < output->numChannels; chan++) {
+			for (int chan = 0; chan < output->numChannels; chan++) {
+				for (int samp = 0; samp < numSamples; samp++) {
 					output->channels[chan][i + samp] = m_output[chan][samp];
 				}
 			}
