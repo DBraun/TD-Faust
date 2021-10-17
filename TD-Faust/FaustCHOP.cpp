@@ -40,6 +40,9 @@ using namespace std;
 #define SAFE_REF_ASSIGN(lhs,rhs)    do { SAFE_RELEASE(lhs); (lhs) = (rhs); SAFE_ADD_REF(lhs); } while(0)
 #endif
 
+std::list<GUI*> GUI::fGuiList;
+ztimedmap GUI::gTimedZoneMap;
+
 // These functions are basic C function, which the DLL loader can find
 // much easier than finding a C++ Class.
 // The DLLEXPORT prefix is needed so the compile exports these functions from the .dll
@@ -366,7 +369,7 @@ FaustCHOP::eval(const string& code)
 	int outputs = theDsp->getNumOutputs();
 
 	// see if we need to alloc
-	if (inputs > m_numInputChannels || outputs > m_numOutputChannels) {
+	if (inputs != m_numInputChannels || outputs != m_numOutputChannels) {
 		// clear and allocate
 		allocate(inputs, outputs, 1);
 	}
@@ -374,7 +377,7 @@ FaustCHOP::eval(const string& code)
 	// init
 	theDsp->init((int)(m_srate + .5));
 
-	if (m_polyphony_enable && m_midi_enable) {
+	if (m_midi_enable) {
 		m_midi_ui->run();
 	}
 

@@ -53,9 +53,6 @@ which is MIT-Licensed.
 #define MAX_OUTPUTS 256
 #endif
 
-std::list<GUI*> GUI::fGuiList;
-ztimedmap GUI::gTimedZoneMap;
-
 // To get more help about these functions, look at CHOP_CPlusPlusBase.h
 class FaustCHOP : public CHOP_CPlusPlusBase
 {
