@@ -328,7 +328,11 @@ FaustCHOP::eval(const string& code)
 	//}
 
 	if (m_midi_enable) {
-		m_midi_handler = rt_midi("my_midi");
+		bool is_virtual = false;
+		const string my_midi_name = string("my_midi"); // this would matter if the midi were virtual.
+		// Only macOS can support virtual MIDI in.
+        // Use case: you want to send MIDI programmatically to Faust from some other software/algorithm, not midi hardware
+		m_midi_handler = rt_midi(my_midi_name, is_virtual);
 	}
 
 	if (m_polyphony_enable) {
