@@ -328,11 +328,9 @@ FaustCHOP::eval(const string& code)
 	//}
 
 	if (m_midi_enable) {
-		bool is_virtual = false;
-		const string my_midi_name = string("my_midi"); // this would matter if the midi were virtual.
 		// Only macOS can support virtual MIDI in.
         // Use case: you want to send MIDI programmatically to Faust from some other software/algorithm, not midi hardware
-		m_midi_handler = rt_midi(my_midi_name, is_virtual);
+		m_midi_handler = rt_midi(m_midi_virtual_name, m_midi_virtual);
 	}
 
 	if (m_polyphony_enable) {
@@ -453,8 +451,9 @@ FaustCHOP::setup_touchdesigner_ui()
 		// It would be better to get it to a variable.
 		string myError;
 		generateAuxFilesFromString(string("my_dsp"), theCode, argc, argv, myError);
-
-		cerr << myError.c_str() << endl;
+		if (strcmp(myError.c_str(), "") != 0) {
+			cerr << myError.c_str() << endl;
+		}
 	}
 	else {
 		cerr << "[Faust]: " << m_errorString << endl;
@@ -500,9 +499,11 @@ FaustCHOP::execute(CHOP_Output* output,
 
 	m_faustLibrariesPath = inputs->getParString("Faustlibrariespath");
 	m_assetsDirPath = inputs->getParString("Assetspath");
+	m_midi_virtual_name = inputs->getParString("Midiinvirtualname");
 
 	m_nvoices = inputs->getParInt("Nvoices");
 	m_midi_enable = inputs->getParDouble("Midi");
+	m_midi_virtual = inputs->getParDouble("Midiinvirtual");
 	m_polyphony_enable = inputs->getParDouble("Polyphony");
 	m_groupVoices = inputs->getParInt("Groupvoices");
 
@@ -573,7 +574,7 @@ FaustCHOP::execute(CHOP_Output* output,
 
 			int numSamples = min(output->numSamples - i, blockSize);
 
-			if (numSamples != m_allocatedSamples) {
+			if (numSamples >= m_allocatedSamples) {
 				allocate(m_numInputChannels, m_numOutputChannels, numSamples);
 			}
 
@@ -751,6 +752,31 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
+	// Midi In Virtual?
+	{
+		OP_NumericParameter	np;
+
+		np.name = "Midiinvirtual";
+		np.label = "MIDI In Virtual";
+		np.defaultValues[0] = 1.;
+
+		OP_ParAppendResult res = manager->appendToggle(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// chuck source code DAT
+	{
+		OP_StringParameter	sp;
+
+		sp.name = "Midiinvirtualname";
+		sp.label = "MIDI In Virtual Name";
+
+		sp.defaultValue = "my_virtual_midi";
+
+		OP_ParAppendResult res = manager->appendString(sp);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
 	// Group voices
 	{
 		OP_NumericParameter	np;
@@ -784,7 +810,7 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		sp.name = "Faustlibrariespath";
 		sp.label = "Faust Libraries Path";
 
-		OP_ParAppendResult res = manager->appendString(sp);
+		OP_ParAppendResult res = manager->appendFolder(sp);
 		assert(res == OP_ParAppendResult::Success);
 	}
 
@@ -796,7 +822,7 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		sp.name = "Assetspath";
 		sp.label = "Assets Path";
 
-		OP_ParAppendResult res = manager->appendString(sp);
+		OP_ParAppendResult res = manager->appendFolder(sp);
 		assert(res == OP_ParAppendResult::Success);
 	}
 

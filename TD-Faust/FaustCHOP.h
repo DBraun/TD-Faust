@@ -108,7 +108,7 @@ private:
 	int32_t				myExecuteCount;
 
 	// sample rate
-	float m_srate;
+	float m_srate = 44100.;
 
 #ifdef WIN32
 	HANDLE guiUpdateMutex; // todo: enable mutex on linux and macOS
@@ -142,6 +142,8 @@ private:
 	int m_nvoices = 0;
 	bool m_polyphony_enable = false;
 	bool m_midi_enable = false;
+	bool m_midi_virtual = false;
+	string m_midi_virtual_name = string("");
 
 	rt_midi m_midi_handler;
 
