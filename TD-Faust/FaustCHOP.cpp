@@ -163,7 +163,8 @@ FaustCHOP::getOutputInfo(CHOP_OutputInfo* info, const OP_Inputs* inputs, void* r
 	//info->startIndex = 0
 
 	// For illustration we are going to output 120hz data
-	info->sampleRate = m_srate = inputs->getParDouble("Samplerate");
+	info->sampleRate = std::max(1., inputs->getParDouble("Samplerate"));
+	m_srate = info->sampleRate;
 
 	return true;
 }
@@ -234,6 +235,8 @@ FaustCHOP::clearBufs()
 	}
 	SAFE_DELETE_ARRAY(m_input);
 	SAFE_DELETE_ARRAY(m_output);
+
+	m_allocatedSamples = 0;
 }
 
 void
@@ -692,6 +695,8 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.defaultValues[0] = 44100.0;
 		np.minSliders[0] = 0.0;
 		np.maxSliders[0] = 96000.0;
+		np.minValues[0] = .001;
+		np.clampMins[0] = true;
 
 		OP_ParAppendResult res = manager->appendFloat(np);
 		assert(res == OP_ParAppendResult::Success);
