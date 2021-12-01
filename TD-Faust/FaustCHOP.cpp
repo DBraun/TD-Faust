@@ -627,12 +627,17 @@ FaustCHOP::execute(CHOP_Output* output,
 				}
 			}
 
+			auto start = high_resolution_clock::now();
+
 			theDsp->compute(numSamples, m_input, m_output);
+
+			auto stop = high_resolution_clock::now();
+			myDuration = duration_cast<microseconds>(stop - start);
 
 			for (int chan = 0; chan < output->numChannels; chan++) {
 				auto writePtr = output->channels[chan];
 				writePtr += i;
-				memcpy(writePtr, m_output[chan], numSamples*4);
+				memcpy(writePtr, m_output[chan], numSamples*sizeof(float));
 				//for (int samp = 0; samp < numSamples; samp++) {
 				//	output->channels[chan][i + samp] = m_output[chan][samp];
 				//}
@@ -646,7 +651,7 @@ FaustCHOP::getNumInfoCHOPChans(void* reserved1)
 {
 	// We return the number of channel we want to output to any Info CHOP
 	// connected to the CHOP. In this example we are just going to send one channel.
-	return 1;
+	return 2;
 }
 
 void
@@ -661,6 +666,10 @@ FaustCHOP::getInfoCHOPChan(int32_t index,
 	{
 		chan->name->setString("executeCount");
 		chan->value = (float)myExecuteCount;
+	}
+	else if (index == 1) {
+		chan->name->setString("faustDSPCookTime");
+		chan->value = myDuration.count() / 1000.;
 	}
 }
 

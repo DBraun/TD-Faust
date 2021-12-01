@@ -20,6 +20,9 @@ which is MIT-Licensed.
 #include "CHOP_CPlusPlusBase.h"
 #include <iostream>
 
+#include <chrono>
+using namespace std::chrono;
+
 // faust include
 #include "faust/dsp/llvm-dsp.h"
 #include "faust/dsp/proxy-dsp.h"
@@ -155,4 +158,5 @@ private:
 	int m_midiBuffer[127]; // store velocity for each pitch
 
 	bool m_wantCompile = false;
+	microseconds myDuration;
 };
