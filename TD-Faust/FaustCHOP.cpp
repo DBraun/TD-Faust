@@ -162,7 +162,6 @@ FaustCHOP::getOutputInfo(CHOP_OutputInfo* info, const OP_Inputs* inputs, void* r
 	//info->numSamples = 1;
 	//info->startIndex = 0
 
-	// For illustration we are going to output 120hz data
 	info->sampleRate = std::max(1., inputs->getParDouble("Samplerate"));
 	m_srate = info->sampleRate;
 
@@ -245,6 +244,9 @@ FaustCHOP::allocate(int inputChannels, int outputChannels, int numSamples)
 	// clear
 	clearBufs();
 
+	// todo: there isn't really a good reason the buffer needs to be above 2048
+	numSamples = std::min(numSamples, 2048);
+
 	// set
 	m_numInputChannels = min(inputChannels, MAX_INPUTS);
 	m_numOutputChannels = min(outputChannels, MAX_OUTPUTS);
@@ -275,7 +277,7 @@ FaustCHOP::eval(const string& code)
 	// arguments
 	int argc = 0;
 	const char** argv;
-	if (strcmp(m_faustLibrariesPath, "") != 0) {
+	if (std::strcmp(m_faustLibrariesPath, "") != 0) {
 		argc = 2;
 		argv = new const char* [argc];
 		argv[0] = "-I";
@@ -337,7 +339,7 @@ FaustCHOP::eval(const string& code)
 	}
 
 	if (m_polyphony_enable) {
-		bool doDynamicallyAllocateVoices = false;
+		bool doDynamicallyAllocateVoices = true;
 		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, doDynamicallyAllocateVoices, m_groupVoices);
 		if (!m_dsp_poly) {
 			std::cerr << "Cannot create instance " << std::endl;
@@ -538,6 +540,12 @@ FaustCHOP::execute(CHOP_Output* output,
 
 	if (theDsp != NULL) {
 
+		int pitch = 0;
+		int pastVel = 0;
+		int velo = 0;
+
+		int numSamples = 0;
+
 		for (int i = 0; i < output->numSamples; i += blockSize) {
 
 			if (controlInput && i < controlInput->numSamples) {
@@ -575,7 +583,7 @@ FaustCHOP::execute(CHOP_Output* output,
 
 			}
 
-			int numSamples = min(output->numSamples - i, blockSize);
+			numSamples = min(output->numSamples - i, blockSize);
 
 			if (numSamples >= m_allocatedSamples) {
 				allocate(m_numInputChannels, m_numOutputChannels, numSamples);
@@ -583,11 +591,12 @@ FaustCHOP::execute(CHOP_Output* output,
 
 			if (midiInput && m_polyphony_enable && m_dsp_poly && (i < midiInput->numSamples)) {
 
-				for (int pitch = 0; pitch < std::min(127, midiInput->numChannels); pitch++) {
+				pitch = 0;
+				for (; pitch < std::min(127, midiInput->numChannels); pitch++) {
 
-					int velo = int(127 * midiInput->getChannelData(pitch)[i]);
+					velo = int(127 * midiInput->getChannelData(pitch)[i]);
 
-					int pastVel = m_midiBuffer[pitch];
+					pastVel = m_midiBuffer[pitch];
 
 					if (pastVel != velo) {
 
@@ -601,6 +610,20 @@ FaustCHOP::execute(CHOP_Output* output,
 						m_midiBuffer[pitch] = velo;
 					}
 
+				}
+
+				// for the remainder, if any, try to turn off notes
+				for (velo = 0; pitch < 127; pitch++) {
+					pastVel = m_midiBuffer[pitch];
+
+					if (pastVel != velo) {
+
+						if (pastVel > 0) {
+							m_dsp_poly->keyOff(0, pitch, velo);
+						}
+
+						m_midiBuffer[pitch] = velo;
+					}
 				}
 			}
 
