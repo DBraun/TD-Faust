@@ -244,9 +244,6 @@ FaustCHOP::allocate(int inputChannels, int outputChannels, int numSamples)
 	// clear
 	clearBufs();
 
-	// todo: there isn't really a good reason the buffer needs to be above 2048
-	numSamples = std::min(numSamples, 2048);
-
 	// set
 	m_numInputChannels = min(inputChannels, MAX_INPUTS);
 	m_numOutputChannels = min(outputChannels, MAX_OUTPUTS);
@@ -419,12 +416,6 @@ FaustCHOP::compile(const string& path)
 	return eval(m_code);
 }
 
-bool
-FaustCHOP::compile()
-{
-	return eval(m_code);
-}
-
 
 void
 FaustCHOP::setup_touchdesigner_ui()
@@ -465,16 +456,12 @@ FaustCHOP::setup_touchdesigner_ui()
 	}
 }
 
-float
+void
 FaustCHOP::setParam(const string& n, float p)
 {
-	// sanity check
-	if (!m_ui) return 0;
-
-	// set the value
-	m_ui->setParamValue(n.c_str(), p);
-
-	return p;
+	if (m_ui) {
+		m_ui->setParamValue(n.c_str(), p);
+	};	
 }
 
 float
@@ -497,11 +484,6 @@ FaustCHOP::execute(CHOP_Output* output,
 {
 	myExecuteCount++;
 
-	const OP_DATInput* dat = inputs->getParDAT("Code");
-	if (dat) {
-		m_code = std::string(dat->getCell(0, 0));
-	}
-
 	m_faustLibrariesPath = inputs->getParString("Faustlibrariespath");
 	m_assetsDirPath = inputs->getParString("Assetspath");
 	m_midi_virtual_name = inputs->getParString("Midiinvirtualname");
@@ -511,6 +493,12 @@ FaustCHOP::execute(CHOP_Output* output,
 	m_midi_virtual = inputs->getParDouble("Midiinvirtual");
 	m_polyphony_enable = inputs->getParDouble("Polyphony");
 	m_groupVoices = inputs->getParInt("Groupvoices");
+
+	if (m_wantCompile) {
+		const OP_DATInput* dat = inputs->getParDAT("Code");
+		eval(std::string(dat->getCell(0, 0)));
+		m_wantCompile = false;
+	}
 
 	if ((m_numOutputChannels != output->numChannels) || output->numChannels == 0) {
 		return;
@@ -525,7 +513,7 @@ FaustCHOP::execute(CHOP_Output* output,
 	if (m_polyphony_enable && midiInput && m_dsp_poly)
 	{
 		// We have to make the block size one so that we can step through the MIDI input one at a time.
-		blockSize = 1;
+		blockSize = midiInput->numSamples == 1 ? blockSize : 1;
 	}
 
 	if (audioInput)
@@ -585,7 +573,7 @@ FaustCHOP::execute(CHOP_Output* output,
 
 			numSamples = min(output->numSamples - i, blockSize);
 
-			if (numSamples >= m_allocatedSamples) {
+			if (numSamples > m_allocatedSamples) {
 				allocate(m_numInputChannels, m_numOutputChannels, numSamples);
 			}
 
@@ -629,6 +617,8 @@ FaustCHOP::execute(CHOP_Output* output,
 
 			if (audioInput) {
 				for (int chan = 0; chan < m_numInputChannels; chan++)
+					// todo: use memcpy
+
 					// Make sure we don't read past the end of the CHOP input
 					for (int samp = 0; samp < numSamples && (i+samp) < audioInput->numSamples; samp++) {
 					{						
@@ -640,9 +630,12 @@ FaustCHOP::execute(CHOP_Output* output,
 			theDsp->compute(numSamples, m_input, m_output);
 
 			for (int chan = 0; chan < output->numChannels; chan++) {
-				for (int samp = 0; samp < numSamples; samp++) {
-					output->channels[chan][i + samp] = m_output[chan][samp];
-				}
+				auto writePtr = output->channels[chan];
+				writePtr += i;
+				memcpy(writePtr, m_output[chan], numSamples*4);
+				//for (int samp = 0; samp < numSamples; samp++) {
+				//	output->channels[chan][i + samp] = m_output[chan][samp];
+				//}
 			}
 		}
 	}
@@ -733,7 +726,9 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.label = "Block Size";
 		np.defaultValues[0] = 512.;
 		np.minSliders[0] = 1.;
-		np.maxSliders[0] = 1024.0;
+		np.maxSliders[0] = 2048.;
+		np.clampMins[0] = 1.;
+		np.clampMaxes[0] = 1.;
 
 		OP_ParAppendResult res = manager->appendFloat(np);
 		assert(res == OP_ParAppendResult::Success);
@@ -921,7 +916,7 @@ FaustCHOP::pulsePressed(const char* name, void* reserved1)
 
 	if (!strcmp(name, "Compile"))
 	{
-		compile();
+		m_wantCompile = true;
 	}
 
 	if (!strcmp(name, "Reset"))

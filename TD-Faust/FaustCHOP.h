@@ -89,9 +89,8 @@ public:
 	void allocate(int inputChannels, int outputChannels, int numSamples);
 	bool eval(const string& code);
 	bool compile(const string& path);
-	bool compile();
 	void setup_touchdesigner_ui();
-	float setParam(const string& n, float p);
+	void setParam(const string& n, float p);
 	float getParam(const string& n);
 	string code();
 
@@ -154,4 +153,6 @@ private:
 
 	//
 	int m_midiBuffer[127]; // store velocity for each pitch
+
+	bool m_wantCompile = false;
 };
