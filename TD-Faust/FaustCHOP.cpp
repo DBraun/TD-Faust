@@ -279,6 +279,10 @@ FaustCHOP::eval(const string& code)
 		argv = new const char* [argc];
 		argv[0] = "-I";
 		argv[1] = m_faustLibrariesPath;
+		//argv[2] = "-vec";
+		//argv[3] = "-vs";
+		//argv[4] = "128";
+		//argv[5] = "-dfs";
 	}
 	else {
 		argv = new const char* [argc];
@@ -407,13 +411,13 @@ FaustCHOP::compile(const string& path)
 	}
 
 	// clear code string
-	m_code = "";
+	std::string code = "";
 	// get it
 	for (string line; std::getline(fin, line); ) {
-		m_code += line + '\n';
+		code += line + '\n';
 	}
 	// eval it
-	return eval(m_code);
+	return eval(code);
 }
 
 
@@ -533,6 +537,7 @@ FaustCHOP::execute(CHOP_Output* output,
 		int velo = 0;
 
 		int numSamples = 0;
+		float* writePtr = nullptr;
 
 		for (int i = 0; i < output->numSamples; i += blockSize) {
 
@@ -635,7 +640,7 @@ FaustCHOP::execute(CHOP_Output* output,
 			myDuration = duration_cast<microseconds>(stop - start);
 
 			for (int chan = 0; chan < output->numChannels; chan++) {
-				auto writePtr = output->channels[chan];
+				writePtr = output->channels[chan];
 				writePtr += i;
 				memcpy(writePtr, m_output[chan], numSamples*sizeof(float));
 				//for (int samp = 0; samp < numSamples; samp++) {
