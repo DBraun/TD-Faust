@@ -340,8 +340,7 @@ FaustCHOP::eval(const string& code)
 	}
 
 	if (m_polyphony_enable) {
-		bool doDynamicallyAllocateVoices = true;
-		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, doDynamicallyAllocateVoices, m_groupVoices);
+		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, m_dynamicVoices, m_groupVoices);
 		if (!m_dsp_poly) {
 			std::cerr << "Cannot create instance " << std::endl;
 			FAUSTPROCESSOR_FAIL_COMPILE
@@ -497,6 +496,7 @@ FaustCHOP::execute(CHOP_Output* output,
 	m_midi_virtual = inputs->getParDouble("Midiinvirtual");
 	m_polyphony_enable = inputs->getParDouble("Polyphony");
 	m_groupVoices = inputs->getParInt("Groupvoices");
+	m_dynamicVoices = inputs->getParInt("Dynamicvoices");
 
 	if (m_wantCompile) {
 		const OP_DATInput* dat = inputs->getParDAT("Code");
@@ -603,20 +603,6 @@ FaustCHOP::execute(CHOP_Output* output,
 						m_midiBuffer[pitch] = velo;
 					}
 
-				}
-
-				// for the remainder, if any, try to turn off notes
-				for (velo = 0; pitch < 127; pitch++) {
-					pastVel = m_midiBuffer[pitch];
-
-					if (pastVel != velo) {
-
-						if (pastVel > 0) {
-							m_dsp_poly->keyOff(0, pitch, velo);
-						}
-
-						m_midiBuffer[pitch] = velo;
-					}
 				}
 			}
 
@@ -821,6 +807,18 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.name = "Groupvoices";
 		np.label = "Group Voices";
 		np.defaultValues[0] = 1.;
+
+		OP_ParAppendResult res = manager->appendToggle(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// Group voices
+	{
+		OP_NumericParameter	np;
+
+		np.name = "Dynamicvoices";
+		np.label = "Dynamic Voices";
+		np.defaultValues[0] = 0.;
 
 		OP_ParAppendResult res = manager->appendToggle(np);
 		assert(res == OP_ParAppendResult::Success);

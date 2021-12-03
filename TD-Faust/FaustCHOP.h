@@ -131,6 +131,7 @@ private:
 	// auto import
 	string m_autoImport;
 	bool m_groupVoices = true;
+	bool m_dynamicVoices = false;
 
 	// faust input buffer
 	FAUSTFLOAT** m_input = nullptr;
