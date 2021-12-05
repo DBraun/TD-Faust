@@ -607,14 +607,20 @@ FaustCHOP::execute(CHOP_Output* output,
 			}
 
 			if (audioInput) {
-				for (int chan = 0; chan < m_numInputChannels; chan++)
+				
+				for (int chan = 0; chan < m_numInputChannels; chan++) {
 					// todo: use memcpy
 
+					writePtr = m_input[chan];
+					auto readPtr = audioInput->channelData[chan];
+					readPtr += i;
+
+					memcpy(writePtr, readPtr, max(0, min(numSamples,  audioInput->numSamples-i))* sizeof(float));
 					// Make sure we don't read past the end of the CHOP input
-					for (int samp = 0; samp < numSamples && (i+samp) < audioInput->numSamples; samp++) {
-					{						
-						m_input[chan][samp] = audioInput->getChannelData(chan)[i+samp];
-					}
+					//for (int samp = 0; samp < numSamples && (i+samp) < audioInput->numSamples; samp++) {
+					//{						
+					//	m_input[chan][samp] = audioInput->getChannelData(chan)[i+samp];
+					//}
 				}
 			}
 
