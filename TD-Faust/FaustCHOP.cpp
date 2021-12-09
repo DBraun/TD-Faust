@@ -70,7 +70,6 @@ extern "C"
 		info->customOPInfo.authorName->setString("David Braun");
 		info->customOPInfo.authorEmail->setString("github.com/DBraun");
 
-		// This CHOP can work with 0 inputs
 		info->customOPInfo.minInputs = 0;
 		info->customOPInfo.maxInputs = 3;
 	}
@@ -524,121 +523,123 @@ FaustCHOP::execute(CHOP_Output* output,
 	{
 		if (audioInput->numChannels < m_numInputChannels) {
 			// todo: throw error
+			// write zeros and return
+			for (int chan = 0; chan < output->numChannels; chan++) {
+				auto writePtr = output->channels[chan];
+				memset(writePtr, 0.f, output->numSamples * sizeof(float));
+			}
 			return;
 		}
 	}
 
 	dsp* theDsp = m_polyphony_enable ? m_dsp_poly : m_dsp;
 
-	if (theDsp != NULL) {
+	if (!theDsp) {
+		// write zeros and return
+		for (int chan = 0; chan < output->numChannels; chan++) {
+			auto writePtr = output->channels[chan];
+			memset(writePtr, 0.f, output->numSamples * sizeof(float));
+		}
 
-		int pitch = 0;
-		int pastVel = 0;
-		int velo = 0;
+		return;
+	}
 
-		int numSamples = 0;
-		float* writePtr = nullptr;
+	int pitch = 0;
+	int pastVel = 0;
+	int velo = 0;
 
-		for (int i = 0; i < output->numSamples; i += blockSize) {
+	int numSamples = 0;
+	float* writePtr = nullptr;
 
-			if (controlInput && i < controlInput->numSamples) {
-				for (int chan = 0; chan < controlInput->numChannels; chan++) {
-					setParam(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[i]);
-				}
+	for (int i = 0; i < output->numSamples; i += blockSize) {
 
-				// If polyphony is enabled and we're grouping voices,
-				// several voices might share the same parameters in a group.
-				// Therefore we have to call updateAllGuis to update all dependent parameters.
-				if (m_nvoices > 0 && m_polyphony_enable && m_groupVoices) {
+		if (controlInput && i < controlInput->numSamples) {
+			for (int chan = 0; chan < controlInput->numChannels; chan++) {
+				setParam(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[i]);
+			}
+
+			// If polyphony is enabled and we're grouping voices,
+			// several voices might share the same parameters in a group.
+			// Therefore we have to call updateAllGuis to update all dependent parameters.
+			if (m_nvoices > 0 && m_polyphony_enable && m_groupVoices) {
 #ifdef WIN32
-					// When you want to access shared memory:
-					DWORD dwWaitResult = WaitForSingleObject(guiUpdateMutex, INFINITE);
+				// When you want to access shared memory:
+				DWORD dwWaitResult = WaitForSingleObject(guiUpdateMutex, INFINITE);
 
-					if (dwWaitResult == WAIT_OBJECT_0 || dwWaitResult == WAIT_ABANDONED)
+				if (dwWaitResult == WAIT_OBJECT_0 || dwWaitResult == WAIT_ABANDONED)
+				{
+					if (dwWaitResult == WAIT_ABANDONED)
 					{
-						if (dwWaitResult == WAIT_ABANDONED)
-						{
-							// todo:
-							// Shared memory is maybe in inconsistent state because other program
-							// crashed while holding the mutex. Check the memory for consistency
-						}
-
-						// Have Faust update all GUIs.
-						GUI::updateAllGuis();
-
-						// After this line other processes can access shared memory
-						ReleaseMutex(guiUpdateMutex);
+						// todo:
+						// Shared memory is maybe in inconsistent state because other program
+						// crashed while holding the mutex. Check the memory for consistency
 					}
+
+					// Have Faust update all GUIs.
+					GUI::updateAllGuis();
+
+					// After this line other processes can access shared memory
+					ReleaseMutex(guiUpdateMutex);
+				}
 #else
-					GUI::updateAllGuis(); // todo: enable mutex on linux and macOS
+				GUI::updateAllGuis(); // todo: enable mutex on linux and macOS
 #endif
-				}
-
 			}
 
-			numSamples = min(output->numSamples - i, blockSize);
+		}
 
-			if (numSamples > m_allocatedSamples) {
-				allocate(m_numInputChannels, m_numOutputChannels, numSamples);
-			}
+		numSamples = min(output->numSamples - i, blockSize);
 
-			if (midiInput && m_polyphony_enable && m_dsp_poly && (i < midiInput->numSamples)) {
+		if (numSamples > m_allocatedSamples) {
+			allocate(m_numInputChannels, m_numOutputChannels, numSamples);
+		}
 
-				pitch = 0;
-				for (; pitch < std::min(127, midiInput->numChannels); pitch++) {
+		if (midiInput && m_polyphony_enable && m_dsp_poly && (i < midiInput->numSamples)) {
 
-					velo = int(127 * midiInput->getChannelData(pitch)[i]);
+			for (pitch = 0; pitch < std::min(127, midiInput->numChannels); pitch++) {
 
-					pastVel = m_midiBuffer[pitch];
+				velo = int(127 * midiInput->getChannelData(pitch)[i]);
 
-					if (pastVel != velo) {
+				pastVel = m_midiBuffer[pitch];
 
-						if (velo > 0 && pastVel <= 0) {
-							m_dsp_poly->keyOn(0, pitch, velo);
-						}
-						else if (velo <= 0 && pastVel > 0) {
-							m_dsp_poly->keyOff(0, pitch, velo);
-						}
+				if (pastVel != velo) {
 
-						m_midiBuffer[pitch] = velo;
+					if (velo > 0 && pastVel <= 0) {
+						m_dsp_poly->keyOn(0, pitch, velo);
+					}
+					else if (velo <= 0 && pastVel > 0) {
+						m_dsp_poly->keyOff(0, pitch, velo);
 					}
 
+					m_midiBuffer[pitch] = velo;
 				}
-			}
 
-			if (audioInput) {
+			}
+		}
+			
+		int chan = 0;
+		if (audioInput) {
 				
-				for (int chan = 0; chan < m_numInputChannels; chan++) {
-					// todo: use memcpy
+			for (chan = 0; chan < m_numInputChannels; chan++) {
+				writePtr = m_input[chan];
+				auto readPtr = audioInput->channelData[chan];
+				readPtr += i;
 
-					writePtr = m_input[chan];
-					auto readPtr = audioInput->channelData[chan];
-					readPtr += i;
-
-					memcpy(writePtr, readPtr, max(0, min(numSamples,  audioInput->numSamples-i))* sizeof(float));
-					// Make sure we don't read past the end of the CHOP input
-					//for (int samp = 0; samp < numSamples && (i+samp) < audioInput->numSamples; samp++) {
-					//{						
-					//	m_input[chan][samp] = audioInput->getChannelData(chan)[i+samp];
-					//}
-				}
+				memcpy(writePtr, readPtr, max(0, min(numSamples,  audioInput->numSamples-i))* sizeof(float));
 			}
+		}
 
-			auto start = high_resolution_clock::now();
+		auto start = high_resolution_clock::now();
 
-			theDsp->compute(numSamples, m_input, m_output);
+		theDsp->compute(numSamples, m_input, m_output);
 
-			auto stop = high_resolution_clock::now();
-			myDuration = duration_cast<microseconds>(stop - start);
+		auto stop = high_resolution_clock::now();
+		myDuration = duration_cast<microseconds>(stop - start);
 
-			for (int chan = 0; chan < output->numChannels; chan++) {
-				writePtr = output->channels[chan];
-				writePtr += i;
-				memcpy(writePtr, m_output[chan], numSamples*sizeof(float));
-				//for (int samp = 0; samp < numSamples; samp++) {
-				//	output->channels[chan][i + samp] = m_output[chan][samp];
-				//}
-			}
+		for (chan = 0; chan < output->numChannels; chan++) {
+			writePtr = output->channels[chan];
+			writePtr += i;
+			memcpy(writePtr, m_output[chan], numSamples*sizeof(float));
 		}
 	}
 }
