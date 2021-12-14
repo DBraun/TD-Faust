@@ -64,8 +64,10 @@ if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
 else()
 
-find_package(SndFile REQUIRED)
-target_link_libraries(dynamiclib SndFile::sndfile)
+if(WIN32)
+	find_package(SndFile REQUIRED)
+	target_link_libraries(dynamiclib SndFile::sndfile)
+endif()
 
 include(FindCurses)
 find_package(ZLIB 1.2.3 REQUIRED)
@@ -97,7 +99,7 @@ list(FILTER llvm_components EXCLUDE REGEX ".*LLVM-C\.lib")
 
 ## If you're seeing linker errors, uncomment this message line and 
 ## make sure it's printing many paths to .lib files.
-# message(llvm_components: ${llvm_components})
+message(llvm_components: ${llvm_components})
 string(STRIP "${llvm_components}" llvm_components)
 target_link_libraries(dynamiclib PRIVATE ${llvm_components})
 endif()
