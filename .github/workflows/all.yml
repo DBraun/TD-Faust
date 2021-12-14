@@ -1,110 +1,111 @@
-# name: Compile, Test, and Deploy
-# on: [push]
-# # on: 
-# #   pull_request: {}
-# #   push:
-# #     branches:
-# #       - main
-# #   release:
-# #     types: [published]
-# jobs:
+name: Compile
+on: [push]
+# on: 
+#   pull_request: {}
+#   push:
+#     branches:
+#       - main
+#   release:
+#     types: [published]
+jobs:
 
-#   # build-windows:
-#   #   runs-on: windows-latest
+  # build-windows:
+  #   runs-on: windows-latest
 
-#   #   strategy:
-#   #     matrix:
-#   #       python-version: [3.8]
+  #   strategy:
+  #     matrix:
+  #       python-version: [3.8]
 
-#   #   steps:
-#   #   - uses: actions/checkout@v2
-#   #     with:
-#   #       submodules: true
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #     with:
+  #       submodules: true
 
-#   #   - name: Setup Python ${{ matrix.python-version }}
-#   #     uses: actions/setup-python@v2
-#   #     with:
-#   #       python-version: ${{ matrix.python-version }}
+  #   - name: Setup Python ${{ matrix.python-version }}
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
 
-#   #   - name: Install Python dependencies
-#   #     run: |
-#   #       python -m pip install --upgrade pip
-#   #       pip install setuptools wheel pytest
+  #   - name: Install Python dependencies
+  #     run: |
+  #       python -m pip install --upgrade pip
+  #       pip install setuptools wheel pytest
 
-#   #   - name: Add msbuild to PATH
-#   #     uses: microsoft/setup-msbuild@v1.0.3
+  #   - name: Add msbuild to PATH
+  #     uses: microsoft/setup-msbuild@v1.0.3
 
-#   #   - name: Get CMake
-#   #     uses: lukka/get-cmake@latest
+  #   - name: Get CMake
+  #     uses: lukka/get-cmake@latest
 
-#   #   - name: copy faust libraries
-#   #     # necessary for setup.py to work.
-#   #     run: |
-#   #       cp -v -r faustlibraries dawdreamer
-#   #       mkdir ${{env.pythonLocation}}/../share/faust
-#   #       cp -v faustlibraries/*.lib ${{env.pythonLocation}}/../share/faust
+  #   - name: copy faust libraries
+  #     # necessary for setup.py to work.
+  #     run: |
+  #       cp -v -r faustlibraries dawdreamer
+  #       mkdir ${{env.pythonLocation}}/../share/faust
+  #       cp -v faustlibraries/*.lib ${{env.pythonLocation}}/../share/faust
 
-#   #   - name: Build libsamplerate
-#   #     run: |
-#   #       cd thirdparty/libsamplerate
-#   #       mkdir build_release
-#   #       cmake -DCMAKE_BUILD_TYPE=Release -Bbuild_release
-#   #       cd build_release
-#   #       msbuild libsamplerate.sln /property:Configuration=Release
+  #   - name: Build libsamplerate
+  #     run: |
+  #       cd thirdparty/libsamplerate
+  #       mkdir build_release
+  #       cmake -DCMAKE_BUILD_TYPE=Release -Bbuild_release
+  #       cd build_release
+  #       msbuild libsamplerate.sln /property:Configuration=Release
 
-#   #   - name: Build Windows (Release)
-#   #     run: |
-#   #       msbuild Builds/VisualStudio2019/DawDreamer.sln /property:Configuration=Release
+  #   - name: Build Windows (Release)
+  #     run: |
+  #       msbuild Builds/VisualStudio2019/DawDreamer.sln /property:Configuration=Release
 
-#   #   - uses: actions/upload-artifact@v2
-#   #     with:
-#   #       name: my-wheel-artifact
-#   #       path: ./wheelhouse/*.whl
+  #   - uses: actions/upload-artifact@v2
+  #     with:
+  #       name: my-wheel-artifact
+  #       path: ./wheelhouse/*.whl
 
-#   build-macos:
-#     runs-on: ${{ matrix.os }}
-#     strategy:
-#       matrix:
-#         python-version: [3.8]
-#         # os: [macos-10.15, macos-latest]
-#         os: [macos-11]
-#     steps:
-#     - uses: actions/checkout@v2
-#       with:
-#         submodules: true
+  build-macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: [3.8]
+        # os: [macos-10.15, macos-latest]
+        os: [macos-11]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
 
-#     - name: Setup Python ${{ matrix.python-version }}
-#       uses: actions/setup-python@v2
-#       with:
-#         python-version: ${{ matrix.python-version }}
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
-#     # - name: Install Python dependencies
-#     #   run: |
-#     #     python -m pip install --upgrade pip
-#     #     pip install setuptools wheel pytest numpy librosa scipy
+    # - name: Install Python dependencies
+    #   run: |
+    #     python -m pip install --upgrade pip
+    #     pip install setuptools wheel pytest numpy librosa scipy
 
-#     - name: download LLVM
-#       run: |
-#         cd thirdparty
-#         curl -OL https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
-#         tar -xf clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
+    - name: download LLVM
+      run: |
+        cd thirdparty
+        curl -OL https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
+        tar -xf clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
+        ls -r $GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm/*
 
-#     - name: Get CMake
-#       uses: lukka/get-cmake@latest
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
 
-#     - name: Use CMake
-#       run: |
-#         cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm
+    - name: Use CMake
+      run: |
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm
 
-#     - name: Build MacOS (Release)
-#       run: |
-#         xcodebuild -configuration Release -project build/TD-Faust.xcodeproj/
-#         ls -r build/*
+    - name: Build MacOS (Release)
+      run: |
+        xcodebuild -configuration Release -project build/TD-Faust.xcodeproj/
+        ls -r build/*
 
-#     - name: Upload Release to Github
-#       uses: softprops/action-gh-release@v1
-#       # if: startsWith(github.ref, 'refs/tags/')
-#       with:
-#         files: |
-#           ./build/*.dylib
-#           ./build/*/*.dylib
+    - name: Upload Release to Github
+      uses: softprops/action-gh-release@v1
+      # if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ./build/*.dylib
+          ./build/*/*.dylib

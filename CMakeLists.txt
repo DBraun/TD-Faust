@@ -83,8 +83,10 @@ include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
 target_link_libraries(${PROJECT_NAME} dynamiclib)
 
-find_package(SndFile REQUIRED)
-target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
+if(WIN32)
+    find_package(SndFile REQUIRED)
+    target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
+endif()
 
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)
@@ -99,6 +101,8 @@ if(WIN32)
   target_link_libraries(${PROJECT_NAME} ws2_32)
   # windows multimedia for rt midi
   target_link_libraries(${PROJECT_NAME} winmm)
+else()
+  target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
 
 if(MSVC)
@@ -108,9 +112,7 @@ endif()
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(ROOT_NAMESPACE ${PROJECT_NAME})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    VS_GLOBAL_KEYWORD "Win32Proj"
-)
+
 ################################################################################
 # Output directory
 ################################################################################
@@ -137,6 +139,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 if(MSVC)
 
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        VS_GLOBAL_KEYWORD "Win32Proj"
+    )
+
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         "WIN32;"
         "_WIN32;"
@@ -144,10 +150,6 @@ if(MSVC)
         "__WINDOWS_DS__"
     )
 
-endif()
-
-if(APPLE)
-target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
 
 ################################################################################
