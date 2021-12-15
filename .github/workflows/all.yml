@@ -93,16 +93,12 @@ jobs:
     - name: Get CMake
       uses: lukka/get-cmake@latest
 
-    - name: Use CMake for libsndfile
-      run: |
-        cd thirdparty/libsndfile
-        cmake . -Bbuild
-
     - name: Build libsndfile
       run: |
+        mkdir thirdparty/libsndfile/build
         cd thirdparty/libsndfile/build
-        ls -r
-        make & make install
+        cmake .. -G "Unix Makefiles"
+        cmake --build . --config Release
 
     - name: Use CMake for TD-Faust
       run: |
