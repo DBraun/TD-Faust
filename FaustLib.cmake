@@ -64,27 +64,13 @@ if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
 else()
 
-# list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/libsndfile_build/cmake)
-# find_package(SndFile REQUIRED)
-
+########## SndFile:
 include (CMakeFindDependencyMacro)
-
-# find_dependency (Ogg 1.3)
-# find_dependency (Vorbis)
-# find_dependency (FLAC)
-# find_dependency (Opus)
-
-include (${SndFile_DIR}/CMakeFiles/Export/cmake/SndFileTargets.cmake)
-set (SNDFILE_INCLUDE_DIR "${SndFile_DIR}/include")
-
-set (SndFile_LIBRARY SndFile::sndfile)
-set (SNDFILE_LIBRARY SndFile::sndfile)
-set (SndFile_LIBRARIES SndFile::sndfile)
-set (SNDFILE_LIBRARIES SndFile::sndfile)
-
-# check_required_components(SndFile)
-
-target_link_libraries(dynamiclib SndFile::sndfile)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
+message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
+include_directories(${SNDFILE_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} ${SndFile_DIR}/release/sndfile.lib)
+##########
 
 include(FindCurses)
 find_package(ZLIB 1.2.3 REQUIRED)

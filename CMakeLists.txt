@@ -4,6 +4,7 @@ project(TD-Faust VERSION 0.0.1)
 
 set(LLVM_DIR ${LLVM_DIR})
 set(SndFile_DIR ${SndFile_DIR})
+set(SNDFILE_INCLUDE_DIR "${SndFile_DIR}/include")
 # list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile_build/cmake")
 
 include(FaustLib.cmake)
@@ -86,25 +87,8 @@ include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
 target_link_libraries(${PROJECT_NAME} dynamiclib)
 
-# list(APPEND CMAKE_MODULE_PATH ${SndFile_DIR}/cmake)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
 include (CMakeFindDependencyMacro)
-
-# find_dependency (Ogg 1.3)
-# find_dependency (Vorbis)
-# find_dependency (FLAC)
-# find_dependency (Opus)
-
-# include (${SndFile_DIR}/CMakeFiles/Export/cmake/SndFileTargets.cmake)
-set (SNDFILE_INCLUDE_DIR "${SndFile_DIR}/include")
-
-# set (SndFile_LIBRARY SndFile::sndfile)
-# set (SNDFILE_LIBRARY SndFile::sndfile)
-# set (SndFile_LIBRARIES SndFile::sndfile)
-# set (SNDFILE_LIBRARIES SndFile::sndfile)
-
-# check_required_components(SndFile)
-
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
 message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
 include_directories(${SNDFILE_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} ${SndFile_DIR}/release/sndfile.lib)
