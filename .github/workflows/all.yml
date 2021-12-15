@@ -101,7 +101,8 @@ jobs:
     - name: Build libsndfile
       run: |
         cd thirdparty/libsndfile/build
-        xcodebuild -configuration Release -project libsndfile.xcodeproj/
+        ls -r
+        make & make install
 
     - name: Use CMake for TD-Faust
       run: |
