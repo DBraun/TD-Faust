@@ -91,7 +91,11 @@ include (CMakeFindDependencyMacro)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
 message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
 include_directories(${SNDFILE_INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME} ${SndFile_DIR}/release/sndfile.lib)
+if(APPLE)
+target_link_libraries(dynamiclib PRIVATE ${SndFile_DIR}/lib/libsndfile.a)
+else()
+target_link_libraries(dynamiclib PRIVATE ${SndFile_DIR}/release/sndfile.lib)
+endif()
 
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)
