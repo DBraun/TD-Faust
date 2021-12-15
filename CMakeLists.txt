@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 project(TD-Faust VERSION 0.0.1)
 
 set(LLVM_DIR ${LLVM_DIR})
+set(SndFile_DIR ${SndFile_DIR})
 include(FaustLib.cmake)
 ## Create Faust
 message(STATUS "TD-Faust external")
