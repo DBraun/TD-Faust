@@ -84,7 +84,7 @@ include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
 target_link_libraries(${PROJECT_NAME} dynamiclib)
 
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/libsndfile/cmake)
+# list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/libsndfile/cmake)
 find_package(SndFile REQUIRED)
 target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
 
