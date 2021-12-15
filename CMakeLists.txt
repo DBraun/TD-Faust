@@ -4,6 +4,8 @@ project(TD-Faust VERSION 0.0.1)
 
 set(LLVM_DIR ${LLVM_DIR})
 set(SndFile_DIR ${SndFile_DIR})
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
+
 include(FaustLib.cmake)
 ## Create Faust
 message(STATUS "TD-Faust external")
