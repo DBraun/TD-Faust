@@ -83,10 +83,8 @@ include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
 target_link_libraries(${PROJECT_NAME} dynamiclib)
 
-if(WIN32)
-    find_package(SndFile REQUIRED)
-    target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
-endif()
+find_package(SndFile REQUIRED)
+target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
 
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)

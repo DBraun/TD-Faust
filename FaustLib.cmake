@@ -64,10 +64,8 @@ if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
 else()
 
-if(WIN32)
-	find_package(SndFile REQUIRED)
-	target_link_libraries(dynamiclib SndFile::sndfile)
-endif()
+find_package(SndFile REQUIRED)
+target_link_libraries(dynamiclib SndFile::sndfile)
 
 include(FindCurses)
 find_package(ZLIB 1.2.3 REQUIRED)

@@ -93,12 +93,22 @@ jobs:
     - name: Get CMake
       uses: lukka/get-cmake@latest
 
-    - name: Use CMake
+    - name: Use CMake for libsndfile
       run: |
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm
+        cd thirdparty/libsndfile
+        cmake . -Bbuild
 
-    - name: Build MacOS (Release)
+    - name: Build libsndfile
+      run: |
+        cd thirdparty/libsndfile/build
+        xcodebuild -configuration Release -project libsndfile.xcodeproj/
+
+    - name: Use CMake for TD-Faust
+      run: |
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm;$GITHUB_WORKSPACE/thirdparty/libsndfile/build
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm;$GITHUB_WORKSPACE/thirdparty/libsndfile/build
+
+    - name: Build TD-Faust (Release)
       run: |
         xcodebuild -configuration Release -project build/TD-Faust.xcodeproj/
         ls -r build/*
