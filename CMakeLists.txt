@@ -91,10 +91,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile
 include (CMakeFindDependencyMacro)
 
 if(APPLE)
-find_dependency (Ogg 1.3)
-find_dependency (Vorbis)
+# find_dependency (Ogg 1.3)
+# find_dependency (Vorbis)
 find_dependency (FLAC)
-find_dependency (Opus)
+# find_dependency (Opus)
 endif()
 
 # include (${SndFile_DIR}/CMakeFiles/Export/cmake/SndFileTargets.cmake)
