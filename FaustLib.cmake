@@ -64,6 +64,7 @@ if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
 else()
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/libsndfile/cmake)
 find_package(SndFile REQUIRED)
 target_link_libraries(dynamiclib SndFile::sndfile)
 
