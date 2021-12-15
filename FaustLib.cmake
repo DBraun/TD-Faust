@@ -69,7 +69,7 @@ include (CMakeFindDependencyMacro)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
 message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
 include_directories(${SNDFILE_INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME} ${SndFile_DIR}/release/sndfile.lib)
+target_link_libraries(dynamiclib ${SndFile_DIR}/release/sndfile.lib)
 ##########
 
 include(FindCurses)
