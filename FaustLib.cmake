@@ -70,7 +70,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile
 message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
 include_directories(${SNDFILE_INCLUDE_DIR})
 if(APPLE)
-target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/libsndfile)
+target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/libsndfile.a)
 else()
 target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/release/sndfile.lib)
 endif()
