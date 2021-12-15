@@ -64,8 +64,28 @@ if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
 else()
 
-# list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/libsndfile/cmake)
-find_package(SndFile REQUIRED)
+# list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/libsndfile_build/cmake)
+# find_package(SndFile REQUIRED)
+
+include (CMakeFindDependencyMacro)
+
+if(APPLE)
+find_dependency (Ogg 1.3)
+find_dependency (Vorbis)
+find_dependency (FLAC)
+find_dependency (Opus)
+endif()
+
+include (${SndFile_DIR}/CMakeFiles/Export/cmake/SndFileTargets.cmake)
+set (SNDFILE_INCLUDE_DIR "${SndFile_DIR}/include")
+
+set (SndFile_LIBRARY SndFile::sndfile)
+set (SNDFILE_LIBRARY SndFile::sndfile)
+set (SndFile_LIBRARIES SndFile::sndfile)
+set (SNDFILE_LIBRARIES SndFile::sndfile)
+
+# check_required_components(SndFile)
+
 target_link_libraries(dynamiclib SndFile::sndfile)
 
 include(FindCurses)
