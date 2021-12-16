@@ -95,11 +95,10 @@ jobs:
 
     - name: Build libsndfile
       run: |
-        brew update
-        brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
+        brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
         mkdir thirdparty/libsndfile/build
         cd thirdparty/libsndfile/build
-        cmake .. -G "Unix Makefiles"
+        cmake .. -G "Unix Makefiles" -DBUILD_TESTING=off -DBUILD_EXAMPLES=off
         make & make install
 #        cmake --build . --config Release
     - name: Use CMake for TD-Faust
