@@ -86,6 +86,15 @@ else()
 	target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/release/sndfile.lib)
 endif()
 
+####
+find_package(Lame)
+include_directories(${LAME_INCLUDE_DIRS})
+target_link_libraries(dynamiclib ${LAME_LIBRARIES})
+
+find_package(MPG123::libmpg123)
+include_directories(${MPG123_INCLUDE_DIRS})
+target_link_libraries(dynamiclib ${MPG123_LIBRARIES})
+
 ##########
 
 include(FindCurses)
