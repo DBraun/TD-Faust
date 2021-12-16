@@ -63,18 +63,19 @@ jobs:
 
   build-macos:
     strategy:
-      matrix: [macos-cmake]
-      include:
-        - name: macos-cmake
-          os: macos-latest
-          cc: clang
-          cxx: clang++
-          build-system: cmake
-          cmake-generator: 'Unix Makefiles'
-          cmake-options: >-
-            -DCMAKE_BUILD_TYPE=Release
-#            -DCMAKE_C_FLAGS="-Wall -Wextra"
-            -DCMAKE_VERBOSE_MAKEFILE=ON
+      matrix:
+        name: [macos-cmake]
+        include:
+          - name: macos-cmake
+            os: macos-latest
+            cc: clang
+            cxx: clang++
+            build-system: cmake
+            cmake-generator: 'Unix Makefiles'
+            cmake-options: >-
+              -DCMAKE_BUILD_TYPE=Release
+#             -DCMAKE_C_FLAGS="-Wall -Wextra"
+              -DCMAKE_VERBOSE_MAKEFILE=ON
 
     steps:
     - uses: actions/checkout@v2
