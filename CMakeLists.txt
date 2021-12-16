@@ -88,7 +88,7 @@ add_dependencies(${PROJECT_NAME} dynamiclib)
 target_link_libraries(${PROJECT_NAME} dynamiclib)
 
 include (CMakeFindDependencyMacro)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
+# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
 message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
 include_directories(${SNDFILE_INCLUDE_DIR})
 if(APPLE)
