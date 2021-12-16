@@ -75,6 +75,7 @@ jobs:
             cmake-options: >-
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_VERBOSE_MAKEFILE=ON
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
       with:
