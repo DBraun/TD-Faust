@@ -4,7 +4,7 @@ project(TD-Faust VERSION 0.0.1)
 
 set(LLVM_DIR ${LLVM_DIR})
 set(SndFile_DIR ${SndFile_DIR})
-set(SNDFILE_INCLUDE_DIR "${SndFile_DIR}/include")
+set(SNDFILE_INCLUDE_DIR ${SndFile_DIR}/include)
 # list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile_build/cmake")
 
 include(FaustLib.cmake)
