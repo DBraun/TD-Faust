@@ -67,6 +67,13 @@ else()
 ########## SndFile:
 include (CMakeFindDependencyMacro)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
+if (APPLE)
+	find_dependency (Ogg 1.3)
+	find_dependency (Vorbis)
+	find_dependency (FLAC)
+	find_dependency (Opus)
+endif ()
+
 message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
 include_directories(${SNDFILE_INCLUDE_DIR})
 if(APPLE)
