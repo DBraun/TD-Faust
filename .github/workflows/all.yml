@@ -62,26 +62,24 @@ jobs:
   #       path: ./wheelhouse/*.whl
 
   build-macos:
-    runs-on: ${{ matrix.os }}
     strategy:
-      matrix:
-        python-version: [3.8]
-        # os: [macos-10.15, macos-latest]
-        os: [macos-11]
+      matrix: [macos-cmake]
+      include:
+        - name: macos-cmake
+          os: macos-latest
+          cc: clang
+          cxx: clang++
+          build-system: cmake
+          cmake-generator: 'Unix Makefiles'
+          cmake-options: >-
+            -DCMAKE_BUILD_TYPE=Release
+#            -DCMAKE_C_FLAGS="-Wall -Wextra"
+            -DCMAKE_VERBOSE_MAKEFILE=ON
+
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: true
-
-    - name: Setup Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    # - name: Install Python dependencies
-    #   run: |
-    #     python -m pip install --upgrade pip
-    #     pip install setuptools wheel pytest numpy librosa scipy
 
     - name: download LLVM
       run: |
@@ -90,17 +88,13 @@ jobs:
         tar -xf clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
         ls -r $GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm/*
 
-    - name: Get CMake
-      uses: lukka/get-cmake@latest
-
     - name: Build libsndfile
       run: |
         brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
         mkdir thirdparty/libsndfile/build
         cd thirdparty/libsndfile/build
-        cmake .. -G "Unix Makefiles" -DBUILD_TESTING=off -DBUILD_EXAMPLES=off
-        make & make install
-#        cmake --build . --config Release
+        cmake .. -G "${{matrix.cmake-generator}}" ${{matrix.cmake-options}}
+        cmake --build . --config Release
     - name: Use CMake for TD-Faust
       run: |
         cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
