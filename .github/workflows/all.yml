@@ -101,7 +101,6 @@ jobs:
         cd thirdparty/libsndfile/build
         cmake .. -G "Unix Makefiles"
         cmake --build . --config Release
-        ls -r *
     - name: Use CMake for TD-Faust
       run: |
         cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
