@@ -91,7 +91,7 @@ find_package(Lame REQUIRED)
 include_directories(${LAME_INCLUDE_DIRS})
 target_link_libraries(dynamiclib PUBLIC ${LAME_LIBRARIES})
 
-find_package(MPG123 REQUIRED)
+find_package(Mpg123 REQUIRED)
 include_directories(${MPG123_INCLUDE_DIRS})
 target_link_libraries(dynamiclib PUBLIC ${MPG123_LIBRARIES})
 
