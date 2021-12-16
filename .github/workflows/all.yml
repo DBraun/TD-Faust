@@ -74,9 +74,7 @@ jobs:
             cmake-generator: 'Unix Makefiles'
             cmake-options: >-
               -DCMAKE_BUILD_TYPE=Release
-#             -DCMAKE_C_FLAGS="-Wall -Wextra"
               -DCMAKE_VERBOSE_MAKEFILE=ON
-
     steps:
     - uses: actions/checkout@v2
       with:
