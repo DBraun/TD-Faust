@@ -87,11 +87,11 @@ else()
 endif()
 
 ####
-find_package(Lame)
+find_package(Lame REQUIRED)
 include_directories(${LAME_INCLUDE_DIRS})
 target_link_libraries(dynamiclib ${LAME_LIBRARIES})
 
-find_package(MPG123::libmpg123)
+find_package(MPG123 REQUIRED)
 include_directories(${MPG123_INCLUDE_DIRS})
 target_link_libraries(dynamiclib ${MPG123_LIBRARIES})
 
