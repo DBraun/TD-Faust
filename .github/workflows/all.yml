@@ -99,7 +99,7 @@ jobs:
         brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
         mkdir thirdparty/libsndfile/build
         cd thirdparty/libsndfile/build
-        cmake .. -G "Unix Makefiles"
+        cmake .. -G "Unix Makefiles" -DENABLE_EXTERNAL_LIBS=off
         cmake --build . --config Release
         ls -r *
     - name: Use CMake for TD-Faust
