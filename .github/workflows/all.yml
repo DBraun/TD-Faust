@@ -9,57 +9,46 @@ on: [push]
 #     types: [published]
 jobs:
 
-  # build-windows:
-  #   runs-on: windows-latest
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
 
-  #   strategy:
-  #     matrix:
-  #       python-version: [3.8]
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.3
 
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #     with:
-  #       submodules: true
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
 
-  #   - name: Setup Python ${{ matrix.python-version }}
-  #     uses: actions/setup-python@v2
-  #     with:
-  #       python-version: ${{ matrix.python-version }}
+    - name: Download libsndfile
+      run: |
+        cd thirdparty
+        curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.0.31/libsndfile-1.0.31-win64.zip
+        tar -xf libsndfile-1.0.31-win64.zip
+        ls -r $GITHUB_WORKSPACE/thirdparty/libsndfile-1.0.31-win64/*
 
-  #   - name: Install Python dependencies
-  #     run: |
-  #       python -m pip install --upgrade pip
-  #       pip install setuptools wheel pytest
+    - name: Build LLVM
+      run: |
+        cd thirdparty/llvm-project/llvm
+        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64`
+        msbuild build/LLVM.sln /property:Configuration=Release
+    
+    - name: Build TD-Faust (Release)
+      run: |
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/cmake
+        msbuild build/TD-Faust.sln /property:Configuration=Release
+      env:
+        LLVM_DIR: ${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm
 
-  #   - name: Add msbuild to PATH
-  #     uses: microsoft/setup-msbuild@v1.0.3
-
-  #   - name: Get CMake
-  #     uses: lukka/get-cmake@latest
-
-  #   - name: copy faust libraries
-  #     # necessary for setup.py to work.
-  #     run: |
-  #       cp -v -r faustlibraries dawdreamer
-  #       mkdir ${{env.pythonLocation}}/../share/faust
-  #       cp -v faustlibraries/*.lib ${{env.pythonLocation}}/../share/faust
-
-  #   - name: Build libsamplerate
-  #     run: |
-  #       cd thirdparty/libsamplerate
-  #       mkdir build_release
-  #       cmake -DCMAKE_BUILD_TYPE=Release -Bbuild_release
-  #       cd build_release
-  #       msbuild libsamplerate.sln /property:Configuration=Release
-
-  #   - name: Build Windows (Release)
-  #     run: |
-  #       msbuild Builds/VisualStudio2019/DawDreamer.sln /property:Configuration=Release
-
-  #   - uses: actions/upload-artifact@v2
-  #     with:
-  #       name: my-wheel-artifact
-  #       path: ./wheelhouse/*.whl
+    - name: Upload Release to Github
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ${{ github.workspace }}/Plugins/TD-Faust.dll
+          ${{ github.workspace }}/Plugins/faust.dll
 
   build-macos:
     strategy:
