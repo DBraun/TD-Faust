@@ -128,6 +128,7 @@ private:
 	dsp_poly* m_dsp_poly = nullptr;
 	// faust compiler error string
 	string m_errorString;
+	string m_name_app = string("");
 	// auto import
 	string m_autoImport;
 	bool m_groupVoices = true;

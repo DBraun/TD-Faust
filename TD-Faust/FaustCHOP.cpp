@@ -42,6 +42,7 @@ using namespace std;
 
 std::list<GUI*> GUI::fGuiList;
 ztimedmap GUI::gTimedZoneMap;
+static int numCompiled = 0;
 
 // These functions are basic C function, which the DLL loader can find
 // much easier than finding a C++ Class.
@@ -296,13 +297,15 @@ FaustCHOP::eval(const string& code)
 	// auto import
 	const string theCode = m_autoImport + "\n" + code;
 
+	m_name_app = string("my_dsp_") + std::to_string(numCompiled++);
+
 	// create new factory
 	if (m_polyphony_enable) {
-		m_poly_factory = createPolyDSPFactoryFromString("my_dsp", theCode,
+		m_poly_factory = createPolyDSPFactoryFromString(m_name_app, theCode,
 			argc, argv, "", m_errorString, optimize);
 	}
 	else {
-		m_factory = createDSPFactoryFromString("my_dsp", theCode,
+		m_factory = createDSPFactoryFromString(m_name_app, theCode,
 			argc, argv, "", m_errorString, optimize);
 	}
 
@@ -438,17 +441,19 @@ FaustCHOP::setup_touchdesigner_ui()
 		const char** argv = new const char* [argc];
 		argv[0] = "-xml";
 		if (strcmp(m_faustLibrariesPath, "") != 0) {
-			argc = 3;
+			argc = 5;
 			argv = new const char* [argc];
 			argv[0] = "-xml";
 			argv[1] = "-I";
 			argv[2] = m_faustLibrariesPath;
+			argv[3] = "-O";
+			argv[4] = "dsp_output";
 		}
 
 		// This saves to an XML file on disk (undesirable side-effect).
 		// It would be better to get it to a variable.
 		string myError;
-		generateAuxFilesFromString(string("my_dsp"), theCode, argc, argv, myError);
+		generateAuxFilesFromString(m_name_app, theCode, argc, argv, myError);
 		if (strcmp(myError.c_str(), "") != 0) {
 			cerr << myError.c_str() << endl;
 		}
@@ -674,7 +679,7 @@ FaustCHOP::getInfoCHOPChan(int32_t index,
 bool
 FaustCHOP::getInfoDATSize(OP_InfoDATSize* infoSize, void* reserved1)
 {
-	infoSize->rows = 1;
+	infoSize->rows = 2;
 	infoSize->cols = 2;
 	// Setting this to false means we'll be assigning values to the table
 	// one row at a time. True means we'll do it one column at a time.
@@ -702,6 +707,14 @@ FaustCHOP::getInfoDATEntries(int32_t index,
 		snprintf(tempBuffer, sizeof(tempBuffer), "%d", myExecuteCount);
 #endif
 		entries->values[1]->setString(tempBuffer);
+	}
+
+	else if (index == 1) {
+		// Set the value for the first column
+		entries->values[0]->setString("dsp_name");
+
+		// Set the value for the second column
+		entries->values[1]->setString(m_name_app.c_str());
 	}
 }
 

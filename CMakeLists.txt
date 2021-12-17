@@ -4,8 +4,7 @@ project(TD-Faust VERSION 0.0.1)
 
 set(LLVM_DIR ${LLVM_DIR})
 set(SndFile_DIR ${SndFile_DIR})
-set(SNDFILE_INCLUDE_DIR ${SndFile_DIR}/include)
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile_build/cmake")
+# set(SNDFILE_INCLUDE_DIR ${SndFile_DIR}/include)
 
 include(FaustLib.cmake)
 ## Create Faust
@@ -85,17 +84,19 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/architecture)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler)
 include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
-target_link_libraries(${PROJECT_NAME} dynamiclib)
+target_link_libraries(${PROJECT_NAME} PUBLIC dynamiclib)
 
 include (CMakeFindDependencyMacro)
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake")
-message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
-include_directories(${SNDFILE_INCLUDE_DIR})
-if(APPLE)
-target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/libsndfile.a)
-else()
-target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/release/sndfile.lib)
-endif()
+# message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
+# include_directories(${SNDFILE_INCLUDE_DIR})
+# if(APPLE)
+# target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/libsndfile.a)
+# else()
+# target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/release/sndfile.lib)
+# endif()
+
+find_package(SndFile REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC SndFile::sndfile)
 
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)
@@ -107,9 +108,9 @@ include_directories(${LLVM_INCLUDE_DIRS})
 
 if(WIN32)
   # win sock 32
-  target_link_libraries(${PROJECT_NAME} ws2_32)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32)
   # windows multimedia for rt midi
-  target_link_libraries(${PROJECT_NAME} winmm)
+  target_link_libraries(${PROJECT_NAME} PUBLIC winmm)
 else()
   target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
@@ -217,9 +218,3 @@ endif()
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:dynamiclib>"
                      ${CMAKE_SOURCE_DIR}/Plugins)
-
-# Install library
-#INSTALL(TARGETS TD-Faust
-#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} )

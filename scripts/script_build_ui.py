@@ -1,5 +1,6 @@
 import math
 import re
+import xml.etree.ElementTree as ET
 
 def legal_parname(name: str):
 
@@ -74,6 +75,8 @@ def add_ui(path: str, node, container):
 	global activewidgets
 	global passivewidgets
 	global page
+	global basepars
+	global instrument_name
 
 	FAUST_UI = op.FAUST_UI
 
@@ -88,10 +91,16 @@ def add_ui(path: str, node, container):
 	if label is not None:
 		label = label.text
 		if label == '0x00':  # weird necessary step?
-		    # In faust you should have code like `declare name "MyInstrument";`
-		    # When this code is missing, `0x00` might show up here.
-		    # We replace it with the default `my_dsp` which is used in the FaustCHOP C++ code.
-			label = 'my_dsp'
+			# In faust you should have code like `declare name "MyInstrument";`
+			# When this code is missing, `0x00` might show up here.
+			# We replace it with the default `my_dsp` which is used in the FaustCHOP C++ code.
+			if me.parent().par.Polyphony.eval():
+				if instrument_name is not None:
+					label = 'Sequencer/DSP1/Polyphonic/Voices/' + instrument_name
+				else:
+					label = 'Sequencer/DSP1/Polyphonic/Voices/' + 'my_dsp'
+			else:
+				label = 'my_dsp'
 		path += '/' + legal_chan_name(label)
 	else:
 		label = ''
@@ -199,40 +208,63 @@ def add_ui(path: str, node, container):
 		add_ui(path, group, newContainer)
 
 
-import xml.etree.ElementTree as ET
-root = ET.fromstring(op('faust_ui_xml').text)
+def build_ui():
 
-ui = root.findall('ui')[0]
+	global added_par_ids
+	global activewidgets
+	global passivewidgets
+	global page
+	global basepars
+	global instrument_name
 
-basepars = op('..')
+	uic = op('ui_container')
 
-for customPage in basepars.customPages:
-	if customPage.name == 'Control':
-		customPage.destroy()
-# Recreate page for Control
-page = basepars.appendCustomPage('Control')
+	uic = op(parent().par.Viewercomp)
+	if uic is None:
+		debug('Unable to create Faust UI because no Viewer COMP was specified for Faust CHOP: '+me.parent().path)
+		return
 
-uic = op('ui_container')
+	root = ET.fromstring(op('faust_ui_xml').text)
 
-for anOp in uic.ops('./*'):
-	anOp.destroy()
+	ui = root.findall('ui')[0]
+
+	instrument_name = root.findall('name')
+	if instrument_name is not None:
+		instrument_name = instrument_name[0].text
+	else:
+		instrument_name = None
+
+	basepars = op('..')
+
+	for customPage in basepars.customPages:
+		if customPage.name == 'Control':
+			customPage.destroy()
+	# Recreate page for Control
+	page = basepars.appendCustomPage('Control')
+
+	
+
+	for anOp in uic.ops('./*'):
+		anOp.destroy()
 
 
-activewidgets = {}
-passivewidgets = {}
-for widget in ui.find('activewidgets').findall('widget'):
-	activewidgets[widget.get('id')] = {'widget': widget, 'parname': None}
-for widget in ui.find('passivewidgets').findall('widget'):
-	passivewidgets[widget.get('id')] = {'widget': widget}
+	activewidgets = {}
+	passivewidgets = {}
+	for widget in ui.find('activewidgets').findall('widget'):
+		activewidgets[widget.get('id')] = {'widget': widget, 'parname': None}
+	for widget in ui.find('passivewidgets').findall('widget'):
+		passivewidgets[widget.get('id')] = {'widget': widget}
 
-added_par_ids = set()
+	added_par_ids = set()
 
-add_ui('', ui.find('layout'), uic)
+	add_ui('', ui.find('layout'), uic)
 
-dat = op('rename_pars_dat')
-dat.clear()
+	dat = op('rename_pars_dat')
+	dat.clear()
 
-for widget in activewidgets.values():
-	dat.appendRow([
-		widget['parname'], widget['faust_path']
-		])
+	for widget in activewidgets.values():
+		dat.appendRow([
+			widget['parname'], widget['faust_path']
+			])
+
+build_ui()

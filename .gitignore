@@ -3,7 +3,7 @@ Backup/*
 Release/
 Debug/
 build/*
-my_dsp.xml
+TD-Faust.[0-9]*.toe
 
 # Prerequisites
 *.d
@@ -31,7 +31,6 @@ my_dsp.xml
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.exe

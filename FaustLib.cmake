@@ -64,38 +64,14 @@ if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
 else()
 
-########## SndFile:
+########## <SndFile>
 include (CMakeFindDependencyMacro)
 if (APPLE)
 	list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake)
-	# include("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake/FindOgg.cmake")
-	# include("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake/FindVorbis.cmake")
-	# include("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake/FindFLAC.cmake")
-	# include("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake/FindOpus.cmake")
-	# find_dependency (Ogg 1.3)
-	# find_dependency (Vorbis)
-	# find_dependency (FLAC)
-	# find_dependency (Opus)
-	# include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/build/SndFileConfig.cmake)
-	# target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/libsndfile.a)
-	find_package(SndFile REQUIRED)
-	target_link_libraries(dynamiclib PUBLIC SndFile::sndfile)
-else()
-	message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
-	include_directories(${SNDFILE_INCLUDE_DIR})
-	target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/release/sndfile.lib)
 endif()
-
-####
-# find_package(Lame REQUIRED)
-# include_directories(${LAME_INCLUDE_DIRS})
-# target_link_libraries(dynamiclib PUBLIC ${LAME_LIBRARIES})
-
-# find_package(Mpg123 REQUIRED)
-# include_directories(${MPG123_INCLUDE_DIRS})
-# target_link_libraries(dynamiclib PUBLIC ${MPG123_LIBRARIES})
-
-##########
+find_package(SndFile REQUIRED)
+target_link_libraries(dynamiclib PUBLIC SndFile::sndfile)
+########## </SndFile>
 
 include(FindCurses)
 find_package(ZLIB 1.2.3 REQUIRED)
