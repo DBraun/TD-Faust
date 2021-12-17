@@ -84,7 +84,7 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/architecture)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler)
 include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
-target_link_libraries(${PROJECT_NAME} PUBLIC dynamiclib)
+target_link_libraries(${PROJECT_NAME} dynamiclib)
 
 include (CMakeFindDependencyMacro)
 # message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
@@ -96,7 +96,7 @@ include (CMakeFindDependencyMacro)
 # endif()
 
 find_package(SndFile REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC SndFile::sndfile)
+target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
 
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)
@@ -108,9 +108,9 @@ include_directories(${LLVM_INCLUDE_DIRS})
 
 if(WIN32)
   # win sock 32
-  target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32)
+  target_link_libraries(${PROJECT_NAME} ws2_32)
   # windows multimedia for rt midi
-  target_link_libraries(${PROJECT_NAME} PUBLIC winmm)
+  target_link_libraries(${PROJECT_NAME} winmm)
 else()
   target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
