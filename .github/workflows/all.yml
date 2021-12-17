@@ -27,7 +27,7 @@ jobs:
         cd thirdparty
         curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.0.31/libsndfile-1.0.31-win64.zip
         tar -xf libsndfile-1.0.31-win64.zip
-        ls -r $GITHUB_WORKSPACE/thirdparty/libsndfile-1.0.31-win64/*
+        ls -r ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/*
 
     - name: Build LLVM
       run: |
@@ -75,7 +75,7 @@ jobs:
         cd thirdparty
         curl -OL https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
         tar -xf clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
-        ls -r $GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm/*
+        ls -r ${{ github.workspace }}/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm/*
 
     - name: Build libsndfile
       run: |
@@ -86,8 +86,8 @@ jobs:
         cmake --build . --config Release
     - name: Use CMake for TD-Faust
       run: |
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
     - name: Build TD-Faust (Release)
       run: |
         xcodebuild -configuration Release -project build/TD-Faust.xcodeproj/
