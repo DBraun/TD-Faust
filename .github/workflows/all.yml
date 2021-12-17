@@ -32,7 +32,7 @@ jobs:
     - name: Build LLVM
       run: |
         cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64`
+        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64
         msbuild build/LLVM.sln /property:Configuration=Release
     
     - name: Build TD-Faust (Release)
