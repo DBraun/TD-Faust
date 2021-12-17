@@ -101,8 +101,7 @@ jobs:
         cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
     - name: Build TD-Faust (Release)
       run: |
-        cd build
-        xcodebuild -configuration Release -project TD-Faust.xcodeproj/
+        xcodebuild -configuration Release -project build/TD-Faust.xcodeproj/
         ls -r *
         mv Release/TD-Faust.bundle Release/TD-Faust.plugin
         cd ${{ github.workspace }}/thirdparty/faust/build/lib/Release
@@ -115,4 +114,4 @@ jobs:
       with:
         files: |
           ${{ github.workspace }}/thirdparty/faust/build/lib/Release/*.dylib
-          ${{ github.workspace }}/build/Release/*.plugin
+          ${{ github.workspace }}/Release/*.plugin
