@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 project(TD-Faust VERSION 0.0.1)
 
 set(LLVM_DIR ${LLVM_DIR})
+set(SndFile_DIR ${SndFile_DIR})
+# set(SNDFILE_INCLUDE_DIR ${SndFile_DIR}/include)
+
 include(FaustLib.cmake)
 ## Create Faust
 message(STATUS "TD-Faust external")
@@ -83,6 +86,18 @@ include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
 target_link_libraries(${PROJECT_NAME} dynamiclib)
 
+include (CMakeFindDependencyMacro)
+# message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
+# include_directories(${SNDFILE_INCLUDE_DIR})
+# if(APPLE)
+# target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/libsndfile.a)
+# else()
+# target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/release/sndfile.lib)
+# endif()
+
+find_package(SndFile REQUIRED)
+target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
+
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -96,6 +111,8 @@ if(WIN32)
   target_link_libraries(${PROJECT_NAME} ws2_32)
   # windows multimedia for rt midi
   target_link_libraries(${PROJECT_NAME} winmm)
+else()
+  target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
 
 if(MSVC)
@@ -105,9 +122,7 @@ endif()
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(ROOT_NAMESPACE ${PROJECT_NAME})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    VS_GLOBAL_KEYWORD "Win32Proj"
-)
+
 ################################################################################
 # Output directory
 ################################################################################
@@ -134,6 +149,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 if(MSVC)
 
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        VS_GLOBAL_KEYWORD "Win32Proj"
+    )
+
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         "WIN32;"
         "_WIN32;"
@@ -141,10 +160,6 @@ if(MSVC)
         "__WINDOWS_DS__"
     )
 
-endif()
-
-if(APPLE)
-target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
 
 ################################################################################
@@ -203,9 +218,3 @@ endif()
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:dynamiclib>"
                      ${CMAKE_SOURCE_DIR}/Plugins)
-
-# Install library
-#INSTALL(TARGETS TD-Faust
-#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} )

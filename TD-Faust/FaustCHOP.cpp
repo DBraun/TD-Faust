@@ -40,6 +40,10 @@ using namespace std;
 #define SAFE_REF_ASSIGN(lhs,rhs)    do { SAFE_RELEASE(lhs); (lhs) = (rhs); SAFE_ADD_REF(lhs); } while(0)
 #endif
 
+std::list<GUI*> GUI::fGuiList;
+ztimedmap GUI::gTimedZoneMap;
+static int numCompiled = 0;
+
 // These functions are basic C function, which the DLL loader can find
 // much easier than finding a C++ Class.
 // The DLLEXPORT prefix is needed so the compile exports these functions from the .dll
@@ -61,16 +65,14 @@ extern "C"
 
 		// The opLabel is the text that will show up in the OP Create Dialog
 		info->customOPInfo.opLabel->setString("Faust CHOP");
+		info->customOPInfo.opIcon->setString("FST");
 
 		// Information about the author of this OP
 		info->customOPInfo.authorName->setString("David Braun");
 		info->customOPInfo.authorEmail->setString("github.com/DBraun");
 
-		// This CHOP can work with 0 inputs
 		info->customOPInfo.minInputs = 0;
-
-		// It can accept up to 1 input though, which changes it's behavior
-		info->customOPInfo.maxInputs = 2;
+		info->customOPInfo.maxInputs = 3;
 	}
 
 	DLLEXPORT
@@ -106,6 +108,7 @@ FaustCHOP::FaustCHOP(const OP_NodeInfo* info) : myNodeInfo(info)
 	m_dsp_poly = NULL;
 	m_ui = NULL;
 	m_midi_ui = NULL;
+	m_soundUI = NULL;
 	// zero
 	m_input = NULL;
 	m_output = NULL;
@@ -113,10 +116,17 @@ FaustCHOP::FaustCHOP(const OP_NodeInfo* info) : myNodeInfo(info)
 	m_numInputChannels = 0;
 	m_numOutputChannels = 0;
 	// auto import
-	m_autoImport = "// Faust Chugin auto import:\n \
+	m_autoImport = "// Faust CHOP auto import:\n \
         import(\"stdfaust.lib\");\n";
 
 	myExecuteCount = 0;
+
+#ifdef WIN32
+	// At the start of every process
+	guiUpdateMutex = CreateMutex(NULL, FALSE, L"Faust gui::update Mutex");  // todo: enable mutex on linux and macOS
+#endif
+
+	clearMIDI();
 }
 
 FaustCHOP::~FaustCHOP()
@@ -152,8 +162,8 @@ FaustCHOP::getOutputInfo(CHOP_OutputInfo* info, const OP_Inputs* inputs, void* r
 	//info->numSamples = 1;
 	//info->startIndex = 0
 
-	// For illustration we are going to output 120hz data
-	info->sampleRate = m_srate = inputs->getParDouble("Samplerate");
+	info->sampleRate = std::max(1., inputs->getParDouble("Samplerate"));
+	m_srate = info->sampleRate;
 
 	return true;
 }
@@ -186,10 +196,27 @@ FaustCHOP::clear()
 	SAFE_DELETE(m_ui);
 	SAFE_DELETE(m_dsp_poly);
 	SAFE_DELETE(m_midi_ui);
+	SAFE_DELETE(m_soundUI);
 
-	deleteAllDSPFactories();
-	m_factory = NULL;
+	//deleteAllDSPFactories();  // don't actually do this!!
+	deleteDSPFactory(m_factory);
+	//deleteDSPFactory(m_poly_factory);
 	m_poly_factory = NULL;
+	m_factory = NULL;
+
+	clearMIDI();
+}
+
+void
+FaustCHOP::clearMIDI()
+{
+	for (int i = 0; i < 127; i++) {
+		m_midiBuffer[i] = 0;
+	}
+
+	if (m_dsp_poly) {
+		m_dsp_poly->instanceClear();
+	}
 }
 
 void
@@ -207,6 +234,8 @@ FaustCHOP::clearBufs()
 	}
 	SAFE_DELETE_ARRAY(m_input);
 	SAFE_DELETE_ARRAY(m_output);
+
+	m_allocatedSamples = 0;
 }
 
 void
@@ -234,6 +263,8 @@ FaustCHOP::allocate(int inputChannels, int outputChannels, int numSamples)
 	}
 }
 
+#define FAUSTPROCESSOR_FAIL_COMPILE clear(); return false;
+
 bool
 FaustCHOP::eval(const string& code)
 {
@@ -241,8 +272,22 @@ FaustCHOP::eval(const string& code)
 	clear();
 
 	// arguments
-	const int argc = 0;
-	const char** argv = NULL;
+	int argc = 0;
+	const char** argv;
+	if (std::strcmp(m_faustLibrariesPath, "") != 0) {
+		argc = 2;
+		argv = new const char* [argc];
+		argv[0] = "-I";
+		argv[1] = m_faustLibrariesPath;
+		//argv[2] = "-vec";
+		//argv[3] = "-vs";
+		//argv[4] = "128";
+		//argv[5] = "-dfs";
+	}
+	else {
+		argv = new const char* [argc];
+	}
+
 	// optimization level
 	const int optimize = -1;
 
@@ -250,26 +295,32 @@ FaustCHOP::eval(const string& code)
 	m_code = code;
 
 	// auto import
-	string theCode = m_autoImport + "\n" + code;
+	const string theCode = m_autoImport + "\n" + code;
+
+	m_name_app = string("my_dsp_") + std::to_string(numCompiled++);
 
 	// create new factory
 	if (m_polyphony_enable) {
-		m_poly_factory = createPolyDSPFactoryFromString("TouchDesigner", theCode,
+		m_poly_factory = createPolyDSPFactoryFromString(m_name_app, theCode,
 			argc, argv, "", m_errorString, optimize);
 	}
 	else {
-		m_factory = createDSPFactoryFromString("TouchDesigner", theCode,
+		m_factory = createDSPFactoryFromString(m_name_app, theCode,
 			argc, argv, "", m_errorString, optimize);
 	}
 
+	if (argv) {
+		for (int i = 0; i < argc; i++) {
+			argv[i] = NULL;
+		}
+		argv = NULL;
+	}
+
 	// check for error
-	if (m_errorString != "") {
+	if (strcmp(m_errorString.c_str(), "") != 0) {
 		// output error
 		cerr << "[Faust]: " << m_errorString << endl;
-		// clear
-		clear();
-		// done
-		return false;
+		FAUSTPROCESSOR_FAIL_COMPILE
 	}
 
 	//// print where faustlib is looking for stdfaust.lib and the other lib files.
@@ -285,16 +336,16 @@ FaustCHOP::eval(const string& code)
 	//}
 
 	if (m_midi_enable) {
-		m_midi_handler = rt_midi("my_midi");
+		// Only macOS can support virtual MIDI in.
+        // Use case: you want to send MIDI programmatically to Faust from some other software/algorithm, not midi hardware
+		m_midi_handler = rt_midi(m_midi_virtual_name, m_midi_virtual);
 	}
 
 	if (m_polyphony_enable) {
-		// (false, true) works
-		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, false, false);
+		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, m_dynamicVoices, m_groupVoices);
 		if (!m_dsp_poly) {
 			std::cerr << "Cannot create instance " << std::endl;
-			clear();
-			return false;
+			FAUSTPROCESSOR_FAIL_COMPILE
 		}
 		if (m_midi_enable) {
 			m_midi_handler.addMidiIn(m_dsp_poly);
@@ -304,33 +355,35 @@ FaustCHOP::eval(const string& code)
 		m_dsp = m_factory->createDSPInstance();
 		if (!m_dsp) {
 			std::cerr << "Cannot create instance " << std::endl;
-			clear();
-			return false;
+			FAUSTPROCESSOR_FAIL_COMPILE
 		}
 	}
 
 	dsp* theDsp = m_polyphony_enable ? m_dsp_poly : m_dsp;
 
 	// make new UI
-	UI* theUI = nullptr;
-	if (m_polyphony_enable && m_midi_enable)
+	if (m_midi_enable)
 	{
 		m_midi_ui = new MidiUI(&m_midi_handler);
-		theUI = m_midi_ui;
-	} else {
-		m_ui = new FaustCHOPUI();
-		theUI = m_ui;
+		theDsp->buildUserInterface(m_midi_ui);
 	}
 
 	// build ui
-	theDsp->buildUserInterface(theUI);
+	m_ui = new FaustCHOPUI();
+	theDsp->buildUserInterface(m_ui);
+
+	// build sound ui
+	if (strcmp(m_assetsDirPath, "") != 0) {
+		m_soundUI = new SoundUI(m_assetsDirPath, m_srate);
+		theDsp->buildUserInterface(m_soundUI);
+	}
 
 	// get channels
 	int inputs = theDsp->getNumInputs();
 	int outputs = theDsp->getNumOutputs();
 
 	// see if we need to alloc
-	if (inputs > m_numInputChannels || outputs > m_numOutputChannels) {
+	if (inputs != m_numInputChannels || outputs != m_numOutputChannels) {
 		// clear and allocate
 		allocate(inputs, outputs, 1);
 	}
@@ -338,7 +391,7 @@ FaustCHOP::eval(const string& code)
 	// init
 	theDsp->init((int)(m_srate + .5));
 
-	if (m_polyphony_enable && m_midi_enable) {
+	if (m_midi_enable) {
 		m_midi_ui->run();
 	}
 
@@ -359,19 +412,13 @@ FaustCHOP::compile(const string& path)
 	}
 
 	// clear code string
-	m_code = "";
+	std::string code = "";
 	// get it
 	for (string line; std::getline(fin, line); ) {
-		m_code += line + '\n';
+		code += line + '\n';
 	}
 	// eval it
-	return eval(m_code);
-}
-
-bool
-FaustCHOP::compile()
-{
-	return eval(m_code);
+	return eval(code);
 }
 
 
@@ -387,33 +434,41 @@ FaustCHOP::setup_touchdesigner_ui()
 			cerr << "-----------------------------------------------------------" << endl;
 		}
 
-		const int argc = 1;
-		const char* argv[] = { "-xml" };
-		const string my_app = string("my_dsp");
-		string myError;
-		const string theCode = string(m_code);
+		const string theCode = m_autoImport + "\n" + m_code;
+
+		// arguments
+		int argc = 1;		
+		const char** argv = new const char* [argc];
+		argv[0] = "-xml";
+		if (strcmp(m_faustLibrariesPath, "") != 0) {
+			argc = 5;
+			argv = new const char* [argc];
+			argv[0] = "-xml";
+			argv[1] = "-I";
+			argv[2] = m_faustLibrariesPath;
+			argv[3] = "-O";
+			argv[4] = "dsp_output";
+		}
 
 		// This saves to an XML file on disk (undesirable side-effect).
 		// It would be better to get it to a variable.
-		generateAuxFilesFromString(my_app, theCode, argc, argv, myError);
-
-		cerr << myError.c_str() << endl;
+		string myError;
+		generateAuxFilesFromString(m_name_app, theCode, argc, argv, myError);
+		if (strcmp(myError.c_str(), "") != 0) {
+			cerr << myError.c_str() << endl;
+		}
 	}
 	else {
 		cerr << "[Faust]: " << m_errorString << endl;
 	}
 }
 
-float
+void
 FaustCHOP::setParam(const string& n, float p)
 {
-	// sanity check
-	if (!m_ui) return 0;
-
-	// set the value
-	m_ui->setParamValue(n.c_str(), p);
-
-	return p;
+	if (m_ui) {
+		m_ui->setParamValue(n.c_str(), p);
+	};	
 }
 
 float
@@ -436,77 +491,160 @@ FaustCHOP::execute(CHOP_Output* output,
 {
 	myExecuteCount++;
 
-	const OP_DATInput* dat = inputs->getParDAT("Code");
-	if (dat) {
-		m_code = std::string(dat->getCell(0, 0));
-	}
+	m_faustLibrariesPath = inputs->getParString("Faustlibrariespath");
+	m_assetsDirPath = inputs->getParString("Assetspath");
+	m_midi_virtual_name = inputs->getParString("Midiinvirtualname");
 
 	m_nvoices = inputs->getParInt("Nvoices");
 	m_midi_enable = inputs->getParDouble("Midi");
+	m_midi_virtual = inputs->getParDouble("Midiinvirtual");
 	m_polyphony_enable = inputs->getParDouble("Polyphony");
+	m_groupVoices = inputs->getParInt("Groupvoices");
+	m_dynamicVoices = inputs->getParInt("Dynamicvoices");
+
+	if (m_wantCompile) {
+		const OP_DATInput* dat = inputs->getParDAT("Code");
+		eval(std::string(dat->getCell(0, 0)));
+		m_wantCompile = false;
+	}
 
 	if ((m_numOutputChannels != output->numChannels) || output->numChannels == 0) {
 		return;
 	}
 
-	const OP_CHOPInput* chopInput = inputs->getInputCHOP(0);
+	const OP_CHOPInput* audioInput = inputs->getInputCHOP(0);
 	const OP_CHOPInput* controlInput = inputs->getInputCHOP(1);
+	const OP_CHOPInput* midiInput = inputs->getInputCHOP(2);
 
 	int blockSize = (int) inputs->getParDouble("Blocksize");
 
-	if (chopInput)
+	if (m_polyphony_enable && midiInput && m_dsp_poly)
 	{
-		if (chopInput->numChannels < m_numInputChannels) {
+		// We have to make the block size one so that we can step through the MIDI input one at a time.
+		blockSize = midiInput->numSamples == 1 ? blockSize : 1;
+	}
+
+	if (audioInput)
+	{
+		if (audioInput->numChannels < m_numInputChannels) {
 			// todo: throw error
+			// write zeros and return
+			for (int chan = 0; chan < output->numChannels; chan++) {
+				auto writePtr = output->channels[chan];
+				memset(writePtr, 0.f, output->numSamples * sizeof(float));
+			}
 			return;
 		}
 	}
 
 	dsp* theDsp = m_polyphony_enable ? m_dsp_poly : m_dsp;
 
-	if (theDsp != NULL) {
+	if (!theDsp) {
+		// write zeros and return
+		for (int chan = 0; chan < output->numChannels; chan++) {
+			auto writePtr = output->channels[chan];
+			memset(writePtr, 0.f, output->numSamples * sizeof(float));
+		}
 
-		int ind = 0;
+		return;
+	}
 
-		for (int i = 0; i < output->numSamples; i += blockSize) {
+	int pitch = 0;
+	int pastVel = 0;
+	int velo = 0;
 
-			if (controlInput) {
-				for (int chan = 0; chan < controlInput->numChannels; chan++) {
-					ind = i % controlInput->numSamples;
-					setParam(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[ind]);
-				}
+	int numSamples = 0;
+	float* writePtr = nullptr;
+
+	for (int i = 0; i < output->numSamples; i += blockSize) {
+
+		if (controlInput && i < controlInput->numSamples) {
+			for (int chan = 0; chan < controlInput->numChannels; chan++) {
+				setParam(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[i]);
 			}
 
-			int numSamples = min(output->numSamples - i, blockSize);
+			// If polyphony is enabled and we're grouping voices,
+			// several voices might share the same parameters in a group.
+			// Therefore we have to call updateAllGuis to update all dependent parameters.
+			if (m_nvoices > 0 && m_polyphony_enable && m_groupVoices) {
+#ifdef WIN32
+				// When you want to access shared memory:
+				DWORD dwWaitResult = WaitForSingleObject(guiUpdateMutex, INFINITE);
 
-			if (numSamples != m_allocatedSamples) {
-				allocate(m_numInputChannels, m_numOutputChannels, numSamples);
-			}
-
-			if (chopInput) {
-
-				for (int samp = 0; samp < numSamples; samp++) {
-					for (int chan = 0; chan < m_numInputChannels; chan++)
+				if (dwWaitResult == WAIT_OBJECT_0 || dwWaitResult == WAIT_ABANDONED)
+				{
+					if (dwWaitResult == WAIT_ABANDONED)
 					{
-						// Make sure we don't read past the end of the CHOP input
-						ind = (i+samp) % chopInput->numSamples;
-						m_input[chan][samp] = chopInput->getChannelData(chan)[ind];
+						// todo:
+						// Shared memory is maybe in inconsistent state because other program
+						// crashed while holding the mutex. Check the memory for consistency
 					}
+
+					// Have Faust update all GUIs.
+					GUI::updateAllGuis();
+
+					// After this line other processes can access shared memory
+					ReleaseMutex(guiUpdateMutex);
 				}
+#else
+				GUI::updateAllGuis(); // todo: enable mutex on linux and macOS
+#endif
 			}
 
-			if (chopInput) {
-				theDsp->compute(numSamples, m_input, m_output);
-			}
-			else {
-				theDsp->compute(numSamples, nullptr, m_output);
-			}
+		}
 
-			for (int samp = 0; samp < numSamples; samp++) {
-				for (int chan = 0; chan < output->numChannels; chan++) {
-					output->channels[chan][i + samp] = m_output[chan][samp];
+		numSamples = min(output->numSamples - i, blockSize);
+
+		if (numSamples > m_allocatedSamples) {
+			allocate(m_numInputChannels, m_numOutputChannels, numSamples);
+		}
+
+		if (midiInput && m_polyphony_enable && m_dsp_poly && (i < midiInput->numSamples)) {
+
+			for (pitch = 0; pitch < std::min(127, midiInput->numChannels); pitch++) {
+
+				velo = int(127 * midiInput->getChannelData(pitch)[i]);
+
+				pastVel = m_midiBuffer[pitch];
+
+				if (pastVel != velo) {
+
+					if (velo > 0 && pastVel <= 0) {
+						m_dsp_poly->keyOn(0, pitch, velo);
+					}
+					else if (velo <= 0 && pastVel > 0) {
+						m_dsp_poly->keyOff(0, pitch, velo);
+					}
+
+					m_midiBuffer[pitch] = velo;
 				}
+
 			}
+		}
+			
+		int chan = 0;
+		if (audioInput) {
+				
+			for (chan = 0; chan < m_numInputChannels; chan++) {
+				writePtr = m_input[chan];
+				auto readPtr = audioInput->channelData[chan];
+				readPtr += i;
+
+				memcpy(writePtr, readPtr, max(0, min(numSamples,  audioInput->numSamples-i))* sizeof(float));
+			}
+		}
+
+		auto start = high_resolution_clock::now();
+
+		theDsp->compute(numSamples, m_input, m_output);
+
+		auto stop = high_resolution_clock::now();
+		myDuration = duration_cast<microseconds>(stop - start);
+
+		for (chan = 0; chan < output->numChannels; chan++) {
+			writePtr = output->channels[chan];
+			writePtr += i;
+			memcpy(writePtr, m_output[chan], numSamples*sizeof(float));
 		}
 	}
 }
@@ -516,7 +654,7 @@ FaustCHOP::getNumInfoCHOPChans(void* reserved1)
 {
 	// We return the number of channel we want to output to any Info CHOP
 	// connected to the CHOP. In this example we are just going to send one channel.
-	return 1;
+	return 2;
 }
 
 void
@@ -532,12 +670,16 @@ FaustCHOP::getInfoCHOPChan(int32_t index,
 		chan->name->setString("executeCount");
 		chan->value = (float)myExecuteCount;
 	}
+	else if (index == 1) {
+		chan->name->setString("faustDSPCookTime");
+		chan->value = myDuration.count() / 1000.;
+	}
 }
 
 bool
 FaustCHOP::getInfoDATSize(OP_InfoDATSize* infoSize, void* reserved1)
 {
-	infoSize->rows = 1;
+	infoSize->rows = 2;
 	infoSize->cols = 2;
 	// Setting this to false means we'll be assigning values to the table
 	// one row at a time. True means we'll do it one column at a time.
@@ -566,6 +708,14 @@ FaustCHOP::getInfoDATEntries(int32_t index,
 #endif
 		entries->values[1]->setString(tempBuffer);
 	}
+
+	else if (index == 1) {
+		// Set the value for the first column
+		entries->values[0]->setString("dsp_name");
+
+		// Set the value for the second column
+		entries->values[1]->setString(m_name_app.c_str());
+	}
 }
 
 void
@@ -581,6 +731,8 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.defaultValues[0] = 44100.0;
 		np.minSliders[0] = 0.0;
 		np.maxSliders[0] = 96000.0;
+		np.minValues[0] = .001;
+		np.clampMins[0] = true;
 
 		OP_ParAppendResult res = manager->appendFloat(np);
 		assert(res == OP_ParAppendResult::Success);
@@ -594,7 +746,9 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.label = "Block Size";
 		np.defaultValues[0] = 512.;
 		np.minSliders[0] = 1.;
-		np.maxSliders[0] = 1024.0;
+		np.maxSliders[0] = 2048.;
+		np.clampMins[0] = 1.;
+		np.clampMaxes[0] = 1.;
 
 		OP_ParAppendResult res = manager->appendFloat(np);
 		assert(res == OP_ParAppendResult::Success);
@@ -622,7 +776,7 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.maxSliders[0] = 16.;
 		np.clampMins[0] = true;
 		np.clampMaxes[0] = true;
-		np.maxValues[0] = 64.;
+		np.maxValues[0] = 512.;
 		np.minValues[0] = 1.;
 
 		OP_ParAppendResult res = manager->appendInt(np);
@@ -641,6 +795,55 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
+	// Midi In Virtual?
+	{
+		OP_NumericParameter	np;
+
+		np.name = "Midiinvirtual";
+		np.label = "MIDI In Virtual";
+		np.defaultValues[0] = 1.;
+
+		OP_ParAppendResult res = manager->appendToggle(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// chuck source code DAT
+	{
+		OP_StringParameter	sp;
+
+		sp.name = "Midiinvirtualname";
+		sp.label = "MIDI In Virtual Name";
+
+		sp.defaultValue = "my_virtual_midi";
+
+		OP_ParAppendResult res = manager->appendString(sp);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// Group voices
+	{
+		OP_NumericParameter	np;
+
+		np.name = "Groupvoices";
+		np.label = "Group Voices";
+		np.defaultValues[0] = 1.;
+
+		OP_ParAppendResult res = manager->appendToggle(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// Group voices
+	{
+		OP_NumericParameter	np;
+
+		np.name = "Dynamicvoices";
+		np.label = "Dynamic Voices";
+		np.defaultValues[0] = 1.;
+
+		OP_ParAppendResult res = manager->appendToggle(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
 	// chuck source code DAT
 	{
 		OP_StringParameter	sp;
@@ -651,6 +854,30 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		sp.defaultValue = "";
 
 		OP_ParAppendResult res = manager->appendDAT(sp);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// Faust libraries path
+	{
+		OP_NumericParameter	np;
+		OP_StringParameter sp;
+
+		sp.name = "Faustlibrariespath";
+		sp.label = "Faust Libraries Path";
+
+		OP_ParAppendResult res = manager->appendFolder(sp);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
+	// assets folder path
+	{
+		OP_NumericParameter	np;
+		OP_StringParameter sp;
+
+		sp.name = "Assetspath";
+		sp.label = "Assets Path";
+
+		OP_ParAppendResult res = manager->appendFolder(sp);
 		assert(res == OP_ParAppendResult::Success);
 	}
 
@@ -687,6 +914,17 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
+	// Clear MIDI
+	{
+		OP_NumericParameter	np;
+
+		np.name = "Clearmidi";
+		np.label = "Clear MIDI";
+
+		OP_ParAppendResult res = manager->appendPulse(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
+
 	//// menu parameter example
 	//{
 	//	OP_StringParameter	sp;
@@ -710,12 +948,17 @@ FaustCHOP::pulsePressed(const char* name, void* reserved1)
 
 	if (!strcmp(name, "Compile"))
 	{
-		compile();
+		m_wantCompile = true;
 	}
 
 	if (!strcmp(name, "Reset"))
 	{
 		clear();
+	}
+
+	if (!strcmp(name, "Clearmidi"))
+	{
+		clearMIDI();
 	}
 
 	if (!strcmp(name, "Setupuipulse"))

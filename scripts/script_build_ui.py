@@ -1,5 +1,6 @@
 import math
 import re
+import xml.etree.ElementTree as ET
 
 def legal_parname(name: str):
 
@@ -72,7 +73,12 @@ def add_ui(path: str, node, container):
 
 	global added_par_ids
 	global activewidgets
+	global passivewidgets
 	global page
+	global basepars
+	global instrument_name
+
+	FAUST_UI = op.FAUST_UI
 
 	layout = node.get('type') # hgroup, vgroup
 	if layout == 'hgroup':
@@ -84,12 +90,26 @@ def add_ui(path: str, node, container):
 	
 	if label is not None:
 		label = label.text
+		if label == '0x00':  # weird necessary step?
+			# In faust you should have code like `declare name "MyInstrument";`
+			# When this code is missing, `0x00` might show up here.
+			# We replace it with the default `my_dsp` which is used in the FaustCHOP C++ code.
+			if me.parent().par.Polyphony.eval():
+				if instrument_name is not None:
+					label = 'Sequencer/DSP1/Polyphonic/Voices/' + instrument_name
+				else:
+					label = 'Sequencer/DSP1/Polyphonic/Voices/' + 'my_dsp'
+			elif path == '' and instrument_name is not None:
+				label = instrument_name
 		path += '/' + legal_chan_name(label)
 	else:
 		label = ''
 	
 	for i, widgetref in enumerate(node.findall('widgetref')):
 		widgetid = widgetref.get('id')
+
+		if widgetid in passivewidgets:
+			continue
 		
 		# check if we've haven't already added it to the base
 		if widgetid not in added_par_ids:
@@ -136,15 +156,17 @@ def add_ui(path: str, node, container):
 		widget = activewidgets[widgetid]['widget']
 		widgettype = widget.get('type')
 		if widgettype == 'vslider':
-			widget_source = op('masterSlider_vert')
+			widget_source = FAUST_UI.op('./masterSlider_vert')
 		elif widgettype == 'hslider':
-			widget_source = op('masterSlider_horz')
+			widget_source = FAUST_UI.op('./masterSlider_horz')
 		elif widgettype == 'button':
-			widget_source = op('masterButton')
+			widget_source = FAUST_UI.op('./masterButton')
 		elif widgettype == 'checkbox':
-			widget_source = op('masterCheckbox')
+			widget_source = FAUST_UI.op('./masterCheckbox')
 		elif widgettype == 'nentry':
-			widget_source = op('masterDropMenu')
+			widget_source = FAUST_UI.op('./masterDropMenu')
+		elif widgettype == 'soundfile':
+			continue
 		else:
 			raise ValueError('Unexpected widget type: ' + widgettype)
 
@@ -152,7 +174,7 @@ def add_ui(path: str, node, container):
 		for meta in widget.findall('meta'):
 			if meta.get('key') == 'style':
 				if meta.text == 'knob':
-					widget_source = op('masterKnob')
+					widget_source = FAUST_UI.op('./masterKnob')
 
 		new_widget = container.copy(widget_source, name=parname, includeDocked=True)
 		
@@ -160,7 +182,7 @@ def add_ui(path: str, node, container):
 		
 		# add label to the widget
 		if widgettype in ['hslider', 'vslider']:
-			if widget_source == op('masterKnob'):
+			if widget_source == FAUST_UI.op('./masterKnob'):
 				new_widget.par.Knoblabel = activewidgets[widgetid]['parlabel']
 			else:
 				new_widget.par.Sliderlabelnames = activewidgets[widgetid]['parlabel']
@@ -188,34 +210,63 @@ def add_ui(path: str, node, container):
 		add_ui(path, group, newContainer)
 
 
-import xml.etree.ElementTree as ET
-root = ET.fromstring(op('faust_ui_xml').text)
+def build_ui():
 
-ui = root.findall('ui')[0]
+	global added_par_ids
+	global activewidgets
+	global passivewidgets
+	global page
+	global basepars
+	global instrument_name
 
-basepars = op('base_pars')
+	uic = op('ui_container')
 
-basepars.destroyCustomPars()
+	uic = op(parent().par.Viewercomp)
+	if uic is None:
+		debug('Unable to create Faust UI because no Viewer COMP was specified for Faust CHOP: '+me.parent().path)
+		return
 
-uic = op('ui_container')
+	root = ET.fromstring(op('faust_ui_xml').text)
 
-for anOp in uic.ops('./*'):
-	anOp.destroy()
+	ui = root.findall('ui')[0]
 
-page = basepars.appendCustomPage('Custom')
+	instrument_name = root.findall('name')
+	if instrument_name is not None:
+		instrument_name = instrument_name[0].text
+	else:
+		instrument_name = None
 
-activewidgets = {}
-for widget in ui.find('activewidgets').findall('widget'):
-	activewidgets[widget.get('id')] = {'widget': widget, 'parname': None}
+	basepars = op('..')
 
-added_par_ids = set()
+	for customPage in basepars.customPages:
+		if customPage.name == 'Control':
+			customPage.destroy()
+	# Recreate page for Control
+	page = basepars.appendCustomPage('Control')
 
-add_ui('', ui.find('layout'), uic)
+	
 
-dat = op('rename_pars_dat')
-dat.clear()
+	for anOp in uic.ops('./*'):
+		anOp.destroy()
 
-for widget in activewidgets.values():
-	dat.appendRow([
-		widget['parname'], widget['faust_path']
-		])
+
+	activewidgets = {}
+	passivewidgets = {}
+	for widget in ui.find('activewidgets').findall('widget'):
+		activewidgets[widget.get('id')] = {'widget': widget, 'parname': None}
+	for widget in ui.find('passivewidgets').findall('widget'):
+		passivewidgets[widget.get('id')] = {'widget': widget}
+
+	added_par_ids = set()
+
+	add_ui('', ui.find('layout'), uic)
+
+	dat = op('rename_pars_dat')
+	dat.clear()
+
+	for widget in activewidgets.values():
+		dat.appendRow([
+			widget['parname'], widget['faust_path']
+			])
+
+build_ui()

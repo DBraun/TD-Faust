@@ -61,15 +61,32 @@ public:
 
     }
 
+    void openTabBox(const char* label) { pushLabel(cleanLabel(label)); }
+    void openHorizontalBox(const char* label) { pushLabel(cleanLabel(label)); }
+    void openVerticalBox(const char* label) { pushLabel(cleanLabel(label)); }
+
+    std::string cleanLabel(const char* label) {
+
+        std::string s(label);
+
+        // remove open and closed parentheses.
+        std::string safeLabel = std::regex_replace(s, std::regex("[\(\)]+"), "");
+
+        // replace spaces with a single underscore
+        safeLabel = std::regex_replace(safeLabel, std::regex("\\s+"), "_");
+
+        return safeLabel;
+    }
+
     void
     dumpParams() {
         // iterator
-        std::map<std::string, int>::iterator iter = fPathMap.begin();
+        auto iter = fItems.begin();
         // go
-        for (; iter != fPathMap.end(); iter++)
+        for (; iter != fItems.end(); iter++)
         {
             // print
-            cerr << iter->first << " : " << (iter->second) << endl;
+            cerr << iter->fPath << " : " << (iter->fItemType) << endl;
         }
     }
 };

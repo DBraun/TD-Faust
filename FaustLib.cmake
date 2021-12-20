@@ -64,6 +64,15 @@ if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
 else()
 
+########## <SndFile>
+include (CMakeFindDependencyMacro)
+if (APPLE)
+	list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake)
+endif()
+find_package(SndFile REQUIRED)
+target_link_libraries(dynamiclib PUBLIC SndFile::sndfile)
+########## </SndFile>
+
 include(FindCurses)
 find_package(ZLIB 1.2.3 REQUIRED)
 # "/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/lib/libz.tbd"
@@ -94,7 +103,7 @@ list(FILTER llvm_components EXCLUDE REGEX ".*LLVM-C\.lib")
 
 ## If you're seeing linker errors, uncomment this message line and 
 ## make sure it's printing many paths to .lib files.
-# message(llvm_components: ${llvm_components})
+message(llvm_components: ${llvm_components})
 string(STRIP "${llvm_components}" llvm_components)
 target_link_libraries(dynamiclib PRIVATE ${llvm_components})
 endif()
