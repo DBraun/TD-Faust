@@ -65,7 +65,7 @@ extern "C"
 
 		// The opLabel is the text that will show up in the OP Create Dialog
 		info->customOPInfo.opLabel->setString("Faust CHOP");
-		info->customOPInfo.opIcon->setString("FAU");
+		info->customOPInfo.opIcon->setString("FST");
 
 		// Information about the author of this OP
 		info->customOPInfo.authorName->setString("David Braun");
@@ -838,7 +838,7 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 
 		np.name = "Dynamicvoices";
 		np.label = "Dynamic Voices";
-		np.defaultValues[0] = 0.;
+		np.defaultValues[0] = 1.;
 
 		OP_ParAppendResult res = manager->appendToggle(np);
 		assert(res == OP_ParAppendResult::Success);

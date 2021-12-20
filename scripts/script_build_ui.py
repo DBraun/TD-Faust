@@ -99,8 +99,8 @@ def add_ui(path: str, node, container):
 					label = 'Sequencer/DSP1/Polyphonic/Voices/' + instrument_name
 				else:
 					label = 'Sequencer/DSP1/Polyphonic/Voices/' + 'my_dsp'
-			else:
-				label = 'my_dsp'
+			elif path == '' and instrument_name is not None:
+				label = instrument_name
 		path += '/' + legal_chan_name(label)
 	else:
 		label = ''
@@ -165,6 +165,8 @@ def add_ui(path: str, node, container):
 			widget_source = FAUST_UI.op('./masterCheckbox')
 		elif widgettype == 'nentry':
 			widget_source = FAUST_UI.op('./masterDropMenu')
+		elif widgettype == 'soundfile':
+			continue
 		else:
 			raise ValueError('Unexpected widget type: ' + widgettype)
 

@@ -1,16 +1,16 @@
 name: Compile
-on: [push]
-# on: 
-#   pull_request: {}
-#   push:
-#     branches:
-#       - main
-#   release:
-#     types: [published]
+on:
+  pull_request: {}
+  push:
+    tags:
+    - '*'
 jobs:
 
   build-windows:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest]
     steps:
     - uses: actions/checkout@v2
       with:
@@ -42,13 +42,18 @@ jobs:
       env:
         LLVM_DIR: ${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm
 
-    - name: Upload Release to Github
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Make distribution
+      run: |
+        mkdir TD-Faust_dist
+        move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
+        move ${{ github.workspace }}/Plugins/faust.dll TD-Faust_dist
+        tar.exe -c -f ${{ matrix.os }}.zip TD-Faust_dist
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
       with:
-        files: |
-          ${{ github.workspace }}/Plugins/TD-Faust.dll
-          ${{ github.workspace }}/Plugins/faust.dll
+        name: my-artifact-${{ matrix.os }}
+        path: ${{ matrix.os }}.zip
 
   build-macos:
     strategy:
@@ -97,10 +102,31 @@ jobs:
         ls -r *
         mv libfaust.2.38.7.dylib libfaust.2.dylib
 
-    - name: Upload Release to Github
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Make distribution
+      run: |
+        mkdir TD-Faust_dist
+        cp ${{ github.workspace }}/thirdparty/faust/build/lib/Release/*.dylib TD-Faust_dist
+        mv ${{ github.workspace }}/Release/*.plugin TD-Faust_dist
+        zip -r ${{ matrix.os }}.zip TD-Faust_dist
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
       with:
-        files: |
-          ${{ github.workspace }}/thirdparty/faust/build/lib/Release/*.dylib
-          ${{ github.workspace }}/Release/*.plugin
+        name: my-artifact-${{ matrix.os }}
+        path: ${{ matrix.os }}.zip
+
+  create-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    name: "Create Release on GitHub"
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          path: "dist"
+
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "dist/*/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: true
