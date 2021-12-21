@@ -104,7 +104,7 @@ def add_ui(path: str, node, container):
 		path += '/' + legal_chan_name(label)
 	else:
 		label = ''
-	
+
 	for i, widgetref in enumerate(node.findall('widgetref')):
 		widgetid = widgetref.get('id')
 
@@ -120,8 +120,8 @@ def add_ui(path: str, node, container):
 			
 			# add the par to the base
 			widgettype = widget.get('type')
-			parlabel = widget.find('label').text + ' ' + widgetid
-			parname = legal_parname(parlabel)
+			parlabel = widget.find('label').text
+			parname = legal_parname(parlabel + ' ' + widgetid)
 			
 			if widgettype in ['vslider', 'hslider']:
 				# it's a slider
@@ -145,7 +145,8 @@ def add_ui(path: str, node, container):
 				
 			activewidgets[widgetid]['par'] = par[0]
 			activewidgets[widgetid]['parname'] = parname
-			activewidgets[widgetid]['parlabel'] = parlabel
+			activewidgets[widgetid]['parlabel'] = f'"{parlabel}"'
+
 			activewidgets[widgetid]['faust_path'] = path + '/' + legal_chan_name(widget.find('label').text)
 
 		else:
