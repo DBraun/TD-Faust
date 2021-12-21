@@ -46,13 +46,14 @@ jobs:
         mkdir TD-Faust_dist
         move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
         move ${{ github.workspace }}/Plugins/faust.dll TD-Faust_dist
-        tar.exe -c -f ${{ matrix.os }}.zip TD-Faust_dist
+        cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/sndfile.dll TD-Faust_dist
+        tar.exe -c -f TD-Faust-${{ matrix.os }}.zip TD-Faust_dist
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: my-artifact-${{ matrix.os }}
-        path: ${{ matrix.os }}.zip
+        path: TD-Faust-${{ matrix.os }}.zip
 
   build-macos:
     strategy:
@@ -105,14 +106,15 @@ jobs:
       run: |
         mkdir TD-Faust_dist
         cp ${{ github.workspace }}/thirdparty/faust/build/lib/Release/*.dylib TD-Faust_dist
+        cp ${{ github.workspace }}/thirdparty/libsndfile/build/*.dylib TD-Faust_dist
         mv ${{ github.workspace }}/Release/*.plugin TD-Faust_dist
-        zip -r ${{ matrix.os }}.zip TD-Faust_dist
+        zip -r TD-Faust-${{ matrix.os }}.zip TD-Faust_dist
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: my-artifact-${{ matrix.os }}
-        path: ${{ matrix.os }}.zip
+        path: TD-Faust-${{ matrix.os }}.zip
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')

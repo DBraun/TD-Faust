@@ -34,13 +34,13 @@ Demo:
 
 Run the latest `win64.exe` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy the `.lib` files from `C:/Program Files/Faust/share/faust/` to `C:/Program Files/Derivative/TouchDesigner/share/faust/`.
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download `faust.dll` and `TD-Faust.dll`. Place them in this repository's `Plugins` folder.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, and `sndfile.dll` to this repository's `Plugins` folder.
 
 ### macOS
 
 Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy the `.lib` files from `Faust-2.X/share/faust/` to `/usr/local/share/faust`.
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download `libfaust.2.dylib` and `TD-Faust.plugin`. Place them in this repository's `Plugins` folder.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib`, `TD-Faust.plugin` and `libsndfile.dylib` to this repository's `Plugins` folder.
 
 ## Tutorial
 
