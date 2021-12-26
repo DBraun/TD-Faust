@@ -67,13 +67,19 @@ set(ALL_FILES
 )
 
 add_library(TD-Faust MODULE ${ALL_FILES})
-set_target_properties(TD-Faust PROPERTIES BUNDLE TRUE)
-set_target_properties(TD-Faust PROPERTIES
-            CXX_STANDARD 17
-            CXX_EXTENSIONS OFF
-            )
-set_target_properties(${OPNAME} PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(${OPNAME} PROPERTIES PREFIX "")
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 17
+    CXX_EXTENSIONS OFF
+    BUNDLE true
+    BUNDLE_EXTENSION "plugin"
+    MACOSX_BUNDLE_GUI_IDENTIFIER design.dirt.cpp.${PROJECT_NAME}
+    MACOSX_BUNDLE_INFO_STRING ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+    MACOSX_BUNDLE_COPYRIGHT "David Braun"
+    # MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist
+    )
 
 if (APPLE)	
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -stdlib=libc++")
@@ -87,13 +93,6 @@ add_dependencies(${PROJECT_NAME} dynamiclib)
 target_link_libraries(${PROJECT_NAME} dynamiclib)
 
 include (CMakeFindDependencyMacro)
-# message("SNDFILE_INCLUDE_DIR is ${SNDFILE_INCLUDE_DIR}")
-# include_directories(${SNDFILE_INCLUDE_DIR})
-# if(APPLE)
-# target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/libsndfile.a)
-# else()
-# target_link_libraries(dynamiclib PUBLIC ${SndFile_DIR}/release/sndfile.lib)
-# endif()
 
 find_package(SndFile REQUIRED)
 target_link_libraries(${PROJECT_NAME} SndFile::sndfile)

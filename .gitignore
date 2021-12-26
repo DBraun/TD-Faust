@@ -4,6 +4,7 @@ Release/
 Debug/
 build/*
 TD-Faust.[0-9]*.toe
+thirdparty/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
 
 # Prerequisites
 *.d

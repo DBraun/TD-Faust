@@ -40,7 +40,16 @@ Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. D
 
 Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy the `.lib` files from `Faust-2.X/share/faust/` to `/usr/local/share/faust`.
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib`, `TD-Faust.plugin` and `libsndfile.dylib` to this repository's `Plugins` folder.
+Due to some difficulties with codesigning, for the moment you must compile TD-Faust on your own computer.
+
+1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
+2. Install Xcode.
+3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
+4. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like `Apple Development: example@example.com (ABCDE12345)`. Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
+5. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`
+6. Open `TD-Faust.toe`
+
+<!-- Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib` and `TD-Faust.plugin` to this repository's `Plugins` folder. -->
 
 ## Tutorial
 
