@@ -145,7 +145,7 @@ def add_ui(path: str, node, container):
 				
 			activewidgets[widgetid]['par'] = par[0]
 			activewidgets[widgetid]['parname'] = parname
-			activewidgets[widgetid]['parlabel'] = f'"{parlabel}"'
+			activewidgets[widgetid]['parlabel'] = parlabel
 
 			activewidgets[widgetid]['faust_path'] = path + '/' + legal_chan_name(widget.find('label').text)
 
@@ -184,9 +184,9 @@ def add_ui(path: str, node, container):
 		# add label to the widget
 		if widgettype in ['hslider', 'vslider']:
 			if widget_source == FAUST_UI.op('./masterKnob'):
-				new_widget.par.Knoblabel = activewidgets[widgetid]['parlabel']
+				new_widget.par.Knoblabel = '"' + activewidgets[widgetid]['parlabel'] + '"'
 			else:
-				new_widget.par.Sliderlabelnames = activewidgets[widgetid]['parlabel']
+				new_widget.par.Sliderlabelnames = '"' + activewidgets[widgetid]['parlabel'] + '"'
 		elif widgettype == 'button':
 			new_widget.par.Buttonofflabel = new_widget.par.Buttononlabel = activewidgets[widgetid]['parlabel']
 		elif widgettype == 'nentry':
