@@ -61,7 +61,7 @@ def setup_par_menu(par, widget):
 	theMax = text_to_num(widget.find('max').text)
 	step = text_to_num(widget.find('step').text)
 	
-	numItems = math.floor((theMax-theMin)/init) + 1
+	numItems = math.floor((theMax-theMin)/step) + 1
 	
 	items = [min((theMin + step*i), theMax) for i in range(numItems)]
 	
