@@ -32,7 +32,7 @@ Demo:
 
 ### Windows
 
-Run the latest `win64.exe` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy `C:/Program Files/Faust/share/faust/` to `C:/Program Files/Derivative/TouchDesigner/share/faust/`.
+Run the latest `win64.exe` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy `C:/Program Files/Faust/share/faust/` to `C:/Program Files/Derivative/TouchDesigner/share/faust/`. If you're using a TouchDesigner executable in a different location, the destination path in this step would be different such as `C:\Program Files\Derivative\TouchDesigner.2021.38110\share\faust`.
 
 Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, and `sndfile.dll` to this repository's `Plugins` folder.
 
