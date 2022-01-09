@@ -2,21 +2,21 @@
 rm Plugins/libfaust.2.dylib
 rm -r Plugins/TD-Faust.plugin
 
-# # Build LLVM
-# cd thirdparty/llvm-project/llvm
-# cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_BUILD_TYPE=Release
-# make --directory=build
-# cd ../../..
+# Build LLVM
+cd thirdparty/llvm-project/llvm
+cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_BUILD_TYPE=Release
+make --directory=build
+cd ../../..
 
-# # Build libsndfile
-# brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
-# mkdir thirdparty/libsndfile/build
-# cd thirdparty/libsndfile/build
-# # todo: enable external libs and do the brew install of those codecs.
-# # The reason we can't do this yet is that we're building/using everything x86_64;arm64 instead of just one
-# cmake .. -G "Unix Makefiles" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DENABLE_EXTERNAL_LIBS=off
-# cmake --build . --config Release
-# cd ../../..
+# Build libsndfile
+brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
+mkdir thirdparty/libsndfile/build
+cd thirdparty/libsndfile/build
+# todo: enable external libs and do the brew install of those codecs.
+# The reason we can't do this yet is that we're building/using everything x86_64;arm64 instead of just one
+cmake .. -G "Unix Makefiles" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DENABLE_EXTERNAL_LIBS=off
+cmake --build . --config Release
+cd ../../..
 
 # Use CMake for TD-Faust
 cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_PREFIX_PATH=$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=thirdparty/libsndfile/build
