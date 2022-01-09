@@ -516,7 +516,7 @@ FaustCHOP::execute(CHOP_Output* output,
 	const OP_CHOPInput* controlInput = inputs->getInputCHOP(1);
 	const OP_CHOPInput* midiInput = inputs->getInputCHOP(2);
 
-	int blockSize = (int) inputs->getParDouble("Blocksize");
+	int blockSize = inputs->getParInt("Blocksize");
 
 	if (m_polyphony_enable && midiInput && m_dsp_poly)
 	{
@@ -747,10 +747,13 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.defaultValues[0] = 512.;
 		np.minSliders[0] = 1.;
 		np.maxSliders[0] = 2048.;
+        np.minValues[0] = 1.;
+        np.maxValues[0] = 4096;
 		np.clampMins[0] = 1.;
 		np.clampMaxes[0] = 1.;
 
-		OP_ParAppendResult res = manager->appendFloat(np);
+
+		OP_ParAppendResult res = manager->appendInt(np);
 		assert(res == OP_ParAppendResult::Success);
 	}
 
@@ -774,14 +777,38 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.defaultValues[0] = 4.;
 		np.minSliders[0] = 1.;
 		np.maxSliders[0] = 16.;
+        np.minValues[0] = 1.;
+        np.maxValues[0] = 512.;
 		np.clampMins[0] = true;
 		np.clampMaxes[0] = true;
-		np.maxValues[0] = 512.;
-		np.minValues[0] = 1.;
 
 		OP_ParAppendResult res = manager->appendInt(np);
 		assert(res == OP_ParAppendResult::Success);
 	}
+            
+    // Group voices
+    {
+        OP_NumericParameter np;
+
+        np.name = "Groupvoices";
+        np.label = "Group Voices";
+        np.defaultValues[0] = 1.;
+
+        OP_ParAppendResult res = manager->appendToggle(np);
+        assert(res == OP_ParAppendResult::Success);
+    }
+
+    // Dynamic voices
+    {
+        OP_NumericParameter np;
+
+        np.name = "Dynamicvoices";
+        np.label = "Dynamic Voices";
+        np.defaultValues[0] = 1.;
+
+        OP_ParAppendResult res = manager->appendToggle(np);
+        assert(res == OP_ParAppendResult::Success);
+    }
 
 	// Midi disable/enable
 	{
@@ -795,7 +822,7 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
-	// Midi In Virtual?
+	// Midi In Virtual Toggle
 	{
 		OP_NumericParameter	np;
 
@@ -807,9 +834,9 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
-	// chuck source code DAT
+	// MIDI In Virtual Name
 	{
-		OP_StringParameter	sp;
+		OP_StringParameter sp;
 
 		sp.name = "Midiinvirtualname";
 		sp.label = "MIDI In Virtual Name";
@@ -820,33 +847,9 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
-	// Group voices
-	{
-		OP_NumericParameter	np;
-
-		np.name = "Groupvoices";
-		np.label = "Group Voices";
-		np.defaultValues[0] = 1.;
-
-		OP_ParAppendResult res = manager->appendToggle(np);
-		assert(res == OP_ParAppendResult::Success);
-	}
-
-	// Group voices
-	{
-		OP_NumericParameter	np;
-
-		np.name = "Dynamicvoices";
-		np.label = "Dynamic Voices";
-		np.defaultValues[0] = 1.;
-
-		OP_ParAppendResult res = manager->appendToggle(np);
-		assert(res == OP_ParAppendResult::Success);
-	}
-
 	// chuck source code DAT
 	{
-		OP_StringParameter	sp;
+		OP_StringParameter sp;
 
 		sp.name = "Code";
 		sp.label = "Code";

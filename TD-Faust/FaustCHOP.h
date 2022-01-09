@@ -18,6 +18,7 @@ which is MIT-Licensed.
 */
 
 #include "CHOP_CPlusPlusBase.h"
+using namespace TD;
 #include <iostream>
 
 #include <chrono>
