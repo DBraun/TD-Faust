@@ -46,7 +46,7 @@ jobs:
         mkdir TD-Faust_dist
         move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
         move ${{ github.workspace }}/Plugins/faust.dll TD-Faust_dist
-        cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/sndfile.dll TD-Faust_dist
+        cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/bin/sndfile.dll TD-Faust_dist
         tar.exe -c -f TD-Faust-${{ matrix.os }}.zip TD-Faust_dist
 
     - name: Upload artifact
