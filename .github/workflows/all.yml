@@ -83,12 +83,13 @@ jobs:
         make --directory=build
 
     - name: Build libsndfile
+      # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
       run: |
-#        brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
-        mkdir thirdparty/libsndfile/build
-        cd thirdparty/libsndfile/build
+        cd thirdparty/libsndfile
+        mkdir build && cd build
         cmake .. -G "${{matrix.cmake-generator}}" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
         cmake --build . --config Release
+    
     - name: Use CMake for TD-Faust
       run: |
         cmake -Bbuild -G "${{matrix.cmake-generator}}" ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
