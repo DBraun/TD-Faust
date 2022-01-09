@@ -38,7 +38,7 @@ Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. D
 
 ### macOS
 
-Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). If you have an M1, choose `*arm64.dmg`, otherwise choose `*x64.dmg`. After installing, copy `Faust-2.X/share/faust/` to `/usr/local/share/faust`.
+Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). If you have an M1 ("Apple Silicon"), choose `*arm64.dmg`, otherwise choose `*x64.dmg`. After installing, copy `Faust-2.X/share/faust/` to `/usr/local/share/faust`.
 
 Due to some difficulties with codesigning, for the moment you must compile TD-Faust on your own computer.
 
