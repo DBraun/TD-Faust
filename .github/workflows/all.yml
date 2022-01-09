@@ -127,4 +127,3 @@ jobs:
           artifacts: "dist/*/*"
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: true
-
