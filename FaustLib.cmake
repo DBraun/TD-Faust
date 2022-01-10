@@ -74,8 +74,6 @@ target_link_libraries(dynamiclib PUBLIC SndFile::sndfile)
 ########## </SndFile>
 
 include(FindCurses)
-find_package(ZLIB 1.2.3 REQUIRED)
-# "/Library/Developer/CommandLineTools/SDKs/MacOSX11.3.sdk/usr/lib/libz.tbd"
 
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)
@@ -92,7 +90,7 @@ string(STRIP "${llvm_components}" llvm_components)
 include_directories(${LLVM_INCLUDE_DIRS})
 message("LLVM_INCLUDE_DIRS: " ${LLVM_INCLUDE_DIRS})
 target_link_directories(dynamiclib PRIVATE "${LLVM_INCLUDE_DIRS}/../lib")
-target_link_libraries(dynamiclib PRIVATE "${llvm_components}" ${CURSES_LIBRARIES} ZLIB::ZLIB)
+target_link_libraries(dynamiclib PRIVATE "${llvm_components}" ${CURSES_LIBRARIES})
 endif()
 
 if(MSVC)

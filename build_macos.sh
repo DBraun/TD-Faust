@@ -4,7 +4,7 @@ rm -r Plugins/TD-Faust.plugin
 
 # Build LLVM
 cd thirdparty/llvm-project/llvm
-cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_BUILD_TYPE=Release
+cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_BUILD_TYPE=Release -DLLVM_BUILD_TOOLS=off -DLLVM_ENABLE_ZLIB=off
 make --directory=build
 cd ../../..
 

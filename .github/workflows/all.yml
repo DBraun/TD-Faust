@@ -31,7 +31,7 @@ jobs:
     - name: Build LLVM
       run: |
         cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64
+        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64 -DLLVM_BUILD_TOOLS=OFF -DLLVM_ENABLE_ZLIB=off
         msbuild build/LLVM.sln /property:Configuration=Release
     
     - name: Build TD-Faust (Release)
@@ -76,12 +76,6 @@ jobs:
       with:
         submodules: true
 
-    - name: Build LLVM
-      run: |
-        cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" -DCMAKE_OSX_ARCHITECTURES='arm64;x86_64' -DCMAKE_BUILD_TYPE=Release
-        make --directory=build
-
     - name: Build libsndfile
       # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
       run: |
@@ -89,6 +83,12 @@ jobs:
         mkdir build && cd build
         cmake .. -G "${{matrix.cmake-generator}}" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
         cmake --build . --config Release
+
+    - name: Build LLVM
+      run: |
+        cd thirdparty/llvm-project/llvm
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" -DCMAKE_OSX_ARCHITECTURES='arm64;x86_64' -DCMAKE_BUILD_TYPE=Release -DLLVM_BUILD_TOOLS=OFF -DLLVM_ENABLE_ZLIB=off
+        make --directory=build
     
     - name: Use CMake for TD-Faust
       run: |
