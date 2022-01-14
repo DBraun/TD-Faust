@@ -298,15 +298,21 @@ FaustCHOP::eval(const string& code)
 	const string theCode = m_autoImport + "\n" + code;
 
 	m_name_app = string("my_dsp_") + std::to_string(numCompiled++);
+            
+#if __APPLE__
+    std::string target = getDSPMachineTarget();
+#else
+    std::string target = std::string("");
+#endif
 
 	// create new factory
 	if (m_polyphony_enable) {
 		m_poly_factory = createPolyDSPFactoryFromString(m_name_app, theCode,
-			argc, argv, "", m_errorString, optimize);
+			argc, argv, target.c_str(), m_errorString, optimize);
 	}
 	else {
 		m_factory = createDSPFactoryFromString(m_name_app, theCode,
-			argc, argv, "", m_errorString, optimize);
+			argc, argv, target.c_str(), m_errorString, optimize);
 	}
 
 	if (argv) {
@@ -344,7 +350,7 @@ FaustCHOP::eval(const string& code)
 	if (m_polyphony_enable) {
 		m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, m_dynamicVoices, m_groupVoices);
 		if (!m_dsp_poly) {
-			std::cerr << "Cannot create instance " << std::endl;
+			std::cerr << "Cannot create Poly DSP instance." << std::endl;
 			FAUSTPROCESSOR_FAIL_COMPILE
 		}
 		if (m_midi_enable) {
@@ -354,7 +360,7 @@ FaustCHOP::eval(const string& code)
 		// create DSP instance
 		m_dsp = m_factory->createDSPInstance();
 		if (!m_dsp) {
-			std::cerr << "Cannot create instance " << std::endl;
+			std::cerr << "Cannot create DSP instance." << std::endl;
 			FAUSTPROCESSOR_FAIL_COMPILE
 		}
 	}

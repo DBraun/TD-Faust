@@ -59,6 +59,8 @@ set(WASM_BACKEND   OFF                       CACHE STRING  "Include WASM backend
 ## Call the faust cmakelist.txt
 add_subdirectory(./thirdparty/faust/build EXCLUDE_FROM_ALL)
 
+target_compile_definitions(dynamiclib PUBLIC LLVM_BUILD_UNIVERSAL=1)
+
 if(MSVC)
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY COMPILE_FLAGS " /EHsc /D WIN32 -D_SCL_SECURE_NO_WARNINGS")
     set_property(TARGET dynamiclib APPEND_STRING PROPERTY LINK_FLAGS " /ignore:4099 ")
