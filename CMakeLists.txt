@@ -88,6 +88,7 @@ endif()
 ## Link TD-Faust with faustlib
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/architecture)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler)
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler/utils)
 include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
 target_link_libraries(${PROJECT_NAME} dynamiclib)

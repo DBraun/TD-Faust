@@ -44,6 +44,8 @@ using namespace std::chrono;
 #include "faust/midi/rt-midi.h"
 #include "faust/midi/RtMidi.cpp"
 
+#include "TMutex.h"
+
 #include "faustchop_ui.cpp"
 
 #ifndef FAUSTFLOAT
@@ -113,9 +115,7 @@ private:
 	// sample rate
 	float m_srate = 44100.;
 
-#ifdef WIN32
-	HANDLE guiUpdateMutex; // todo: enable mutex on linux and macOS
-#endif
+	TMutex guiUpdateMutex;
 
 	// code text (pre any modifications)
 	string m_code;

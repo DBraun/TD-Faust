@@ -121,11 +121,6 @@ FaustCHOP::FaustCHOP(const OP_NodeInfo* info) : myNodeInfo(info)
 
 	myExecuteCount = 0;
 
-#ifdef WIN32
-	// At the start of every process
-	guiUpdateMutex = CreateMutex(NULL, FALSE, L"Faust gui::update Mutex");  // todo: enable mutex on linux and macOS
-#endif
-
 	clearMIDI();
 }
 
@@ -524,12 +519,6 @@ FaustCHOP::execute(CHOP_Output* output,
 
 	int blockSize = inputs->getParInt("Blocksize");
 
-	if (m_polyphony_enable && midiInput && m_dsp_poly)
-	{
-		// We have to make the block size one so that we can step through the MIDI input one at a time.
-		blockSize = midiInput->numSamples == 1 ? blockSize : 1;
-	}
-
 	if (audioInput)
 	{
 		if (audioInput->numChannels < m_numInputChannels) {
@@ -561,6 +550,7 @@ FaustCHOP::execute(CHOP_Output* output,
 
 	int numSamples = 0;
 	float* writePtr = nullptr;
+	bool needGuiMutex = m_nvoices > 0 && m_polyphony_enable && m_groupVoices;
 
 	for (int i = 0; i < output->numSamples; i += blockSize) {
 
@@ -572,29 +562,13 @@ FaustCHOP::execute(CHOP_Output* output,
 			// If polyphony is enabled and we're grouping voices,
 			// several voices might share the same parameters in a group.
 			// Therefore we have to call updateAllGuis to update all dependent parameters.
-			if (m_nvoices > 0 && m_polyphony_enable && m_groupVoices) {
-#ifdef WIN32
-				// When you want to access shared memory:
-				DWORD dwWaitResult = WaitForSingleObject(guiUpdateMutex, INFINITE);
-
-				if (dwWaitResult == WAIT_OBJECT_0 || dwWaitResult == WAIT_ABANDONED)
-				{
-					if (dwWaitResult == WAIT_ABANDONED)
-					{
-						// todo:
-						// Shared memory is maybe in inconsistent state because other program
-						// crashed while holding the mutex. Check the memory for consistency
-					}
-
+			if (needGuiMutex) {
+				if (guiUpdateMutex.Lock()) {
 					// Have Faust update all GUIs.
 					GUI::updateAllGuis();
 
-					// After this line other processes can access shared memory
-					ReleaseMutex(guiUpdateMutex);
+					guiUpdateMutex.Unlock();
 				}
-#else
-				GUI::updateAllGuis(); // todo: enable mutex on linux and macOS
-#endif
 			}
 
 		}
@@ -660,7 +634,7 @@ FaustCHOP::getNumInfoCHOPChans(void* reserved1)
 {
 	// We return the number of channel we want to output to any Info CHOP
 	// connected to the CHOP. In this example we are just going to send one channel.
-	return 2;
+	return 3;
 }
 
 void
@@ -679,6 +653,10 @@ FaustCHOP::getInfoCHOPChan(int32_t index,
 	else if (index == 1) {
 		chan->name->setString("faustDSPCookTime");
 		chan->value = myDuration.count() / 1000.;
+	}
+	else if (index == 2) {
+		chan->name->setString("inputs");
+		chan->value = m_numInputChannels || 0;
 	}
 }
 
