@@ -18,11 +18,11 @@ which is MIT-Licensed.
 */
 
 #include "CHOP_CPlusPlusBase.h"
-using namespace TD;
+//using namespace TD;
 #include <iostream>
 
-#include <chrono>
-using namespace std::chrono;
+//#include <chrono>
+//using namespace std::chrono;
 
 // faust include
 #include "faust/dsp/llvm-dsp.h"
@@ -96,8 +96,6 @@ public:
 	bool eval(const string& code);
 	bool compile(const string& path);
 	void setup_touchdesigner_ui();
-	void setParam(const string& n, float p);
-	float getParam(const string& n);
 	string code();
 
 
@@ -161,5 +159,5 @@ private:
 	int m_midiBuffer[127]; // store velocity for each pitch
 
 	bool m_wantCompile = false;
-	microseconds myDuration;
+	//microseconds myDuration;
 };
