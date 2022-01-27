@@ -25,7 +25,7 @@ Demo:
 * Browse the suggested [Documentation and Resources](https://github.com/grame-cncm/faust#documentation-and-resources).
 * Develop code in the [FAUST IDE](https://faustide.grame.fr/).
 * Read Julius Smith's [Audio Signal Processing in FAUST](https://ccrma.stanford.edu/~jos/aspf/).
-* Browse the [Libraries](https://faustlibraries.grame.fr/).
+* Browse the [Libraries](https://faustlibraries.grame.fr/) and their [source code](https://github.com/grame-cncm/faustlibraries).
 * Read the [Syntax Manual](https://faustdoc.grame.fr/manual/syntax/).
 
 ## Quick Install
