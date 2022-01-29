@@ -6,7 +6,7 @@ TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio 
 * FAUST code can be compiled "just-in-time" and run inside TouchDesigner.
 * Tested on Windows and macOS.
 * Up to 256 channels of input and 256 channels of output.
-* Pick your own block size and sample rate.
+* Pick your own sample rate.
 * Support for all of the standard [FAUST libraries](https://faustlibraries.grame.fr/) including
 * * High-order ambisonics
 * * WAV-file playback
@@ -60,7 +60,6 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 ### Custom Parameters in TouchDesigner
 
 * Sample Rate: Audio sample rate (such as 44100 or 48000).
-* Block Size: The buffer size at which TouchDesigner tells Faust to compute. A good choice is the audio rate divided by the frame rate such as (44100/60=735). If you want to pass control parameters from TouchDesigner to Faust via a wired CHOP, the block size will limit how often those parameters are updated. In an extreme case, you can consider lowering the block size down to 1, but this will have some impact on performance.
 * Polyphony: Toggle whether polyphony is enabled. Refer to the [Faust guide to polyphony](https://faustdoc.grame.fr/manual/midi/) and use the keywords such as `gate`, `gain`, and `freq` when writing the DSP code.
 * N Voices: The number of polyphony voices.
 * MIDI: Toggle whether **hardware** MIDI input is enabled. 
@@ -81,6 +80,8 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 
 After compiling, press the `Setup UI` button to build a UI in the `Viewer COMP`. This step will save an XML file inside a directory called `dsp_output`. It will also print out information inside the TouchDesigner console. On your operating system, you should set the environment variable `TOUCH_TEXT_CONSOLE` to 1. Then restart TouchDesigner and you'll start seeing the text console window.
 
+After "Setup UI" is pressed, the Faust base will create a secondary page of custom parameters titled "Control".
+
 In a *non-polyphonic example*, this is an example of the important printout section:
 
 <details>
@@ -97,7 +98,7 @@ Number of Outputs: 2
 </pre>
 </details>
 
-This means that you can pass a CHOP containing those three parameter names to the second input of the Faust CHOP. You can even make this CHOP have the same sample rate as the Faust CHOP and lower the `Block Size` to 1 in order to have no-latency control of the parameters.
+This means that you can pass a CHOP containing those three parameter names to the second input of the Faust CHOP. You can even make this CHOP have the same sample rate as the Faust CHOP in order to have no-latency control of the parameters.
 
 In a *polyphonic* example with `Group Voices` enabled, this is an example of the important printout section:
 
@@ -193,6 +194,22 @@ If you enable `Dynamic Voices`, then voices whose notes have been released will 
 * You are not wiring a MIDI buffer as the third input.
 * `Group Voices` is off.
 * You are individually addressing the frequencies, gates and/or gains of the polyphonic voices. This step works as a replacement for the lack of the wired MIDI buffer.
+
+### Control Rate and Sample Rate
+
+The sample rate is typically a high number such as 44100 Hz, and the control rate of UI parameters might be only 60 Hz. This can lead to artifacts. Suppose we are listening to a 44.1 kHz signal, but we are multiplying it by a 60 Hz "control" signal such as a UI slider meant to control the volume.
+
+```faust
+import("stdfaust.lib");
+volume = hslider("Volume", 1., 0., 1., ma.EPSILON);
+process = os.osc(440.)*volume <: _, _;
+```
+
+In TouchDesigner, we can press "Setup UI" to get a "Volume" custom parameter on the "Control" page of the Faust base. You can look inside the base to see how the custom parameter is wired into the Faust CHOP. By default, this "Volume" signal will only be the project cook rate (60 Hz). Therefore, as you change the volume, you will hear artifacts in the output. There are two solutions.
+
+1. Use [si.smoo](https://faustlibraries.grame.fr/libs/signals/#sismoo) or [si.smooth](https://faustlibraries.grame.fr/libs/signals/#sismooth) to smooth the control signal: `volume = hslider("Volume", 1., 0., 1., ma.EPSILON) : si.smoo`
+
+2. Create a higher sample-rate control signal, possibly as high as the Faust CHOP, and connect it to the Faust base.
 
 ## Licenses / Thank You
 

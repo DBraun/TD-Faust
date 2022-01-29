@@ -522,7 +522,12 @@ FaustCHOP::execute(CHOP_Output* output,
 		m_wantCompile = false;
 	}
 
-	if ((m_numOutputChannels != output->numChannels) || output->numChannels == 0) {
+	if (output->numChannels == 0) {
+		return;
+	}
+
+	if (m_numOutputChannels != output->numChannels) {
+		m_errorString = std::string("[FaustCHOP]: Error with number of output channels.");
 		return;
 	}
 
@@ -530,7 +535,15 @@ FaustCHOP::execute(CHOP_Output* output,
 	const OP_CHOPInput* controlInput = inputs->getInputCHOP(1);
 	const OP_CHOPInput* midiInput = inputs->getInputCHOP(2);
 
-	int blockSize = inputs->getParInt("Blocksize");
+	int blockSize = 1024;
+
+	if (controlInput && controlInput->numChannels) {
+		blockSize = std::min(blockSize, (int) (m_srate/controlInput->sampleRate));
+	}
+	if (midiInput && midiInput->numChannels) {
+		blockSize = std::min(blockSize, (int)(m_srate / midiInput->sampleRate));
+	}
+	blockSize = std::max(blockSize, 1);
 
 	if (audioInput)
 	{
@@ -541,6 +554,7 @@ FaustCHOP::execute(CHOP_Output* output,
 				auto writePtr = output->channels[chan];
 				memset(writePtr, 0.f, output->numSamples * sizeof(float));
 			}
+			m_errorString = std::string("[FaustCHOP]: Not enough input channels.");
 			return;
 		}
 	}
@@ -553,7 +567,7 @@ FaustCHOP::execute(CHOP_Output* output,
 			auto writePtr = output->channels[chan];
 			memset(writePtr, 0.f, output->numSamples * sizeof(float));
 		}
-
+		//m_errorString = std::string("[FaustCHOP]: DSP not found.");
 		return;
 	}
 
@@ -657,6 +671,8 @@ FaustCHOP::execute(CHOP_Output* output,
 			memcpy(writePtr, m_output[chan], numSamples*sizeof(float));
 		}
 	}
+
+	m_errorString = std::string("");
 }
 
 int32_t
@@ -749,25 +765,6 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.clampMins[0] = true;
 
 		OP_ParAppendResult res = manager->appendFloat(np);
-		assert(res == OP_ParAppendResult::Success);
-	}
-
-	// Buffer Size
-	{
-		OP_NumericParameter	np;
-
-		np.name = "Blocksize";
-		np.label = "Block Size";
-		np.defaultValues[0] = 512.;
-		np.minSliders[0] = 1.;
-		np.maxSliders[0] = 2048.;
-        np.minValues[0] = 1.;
-        np.maxValues[0] = 4096.;
-		np.clampMins[0] = 1.;
-		np.clampMaxes[0] = 1.;
-
-
-		OP_ParAppendResult res = manager->appendInt(np);
 		assert(res == OP_ParAppendResult::Success);
 	}
 
