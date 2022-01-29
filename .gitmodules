@@ -1,9 +1,9 @@
-[submodule "thirdparty/faust"]
-	path = thirdparty/faust
-	url = https://github.com/grame-cncm/faust.git
 [submodule "thirdparty/llvm-project"]
 	path = thirdparty/llvm-project
 	url = https://github.com/llvm/llvm-project.git
 [submodule "thirdparty/libsndfile"]
 	path = thirdparty/libsndfile
 	url = https://github.com/libsndfile/libsndfile
+[submodule "thirdparty/faust"]
+	path = thirdparty/faust
+	url = https://github.com/grame-cncm/faust.git

@@ -269,19 +269,14 @@ FaustCHOP::eval(const string& code)
 
 	// arguments
 	int argc = 0;
-	const char** argv;
+	const char** argv = new const char* [128];
 	if (std::strcmp(m_faustLibrariesPath, "") != 0) {
-		argc = 2;
-		argv = new const char* [argc];
-		argv[0] = "-I";
-		argv[1] = m_faustLibrariesPath;
-		//argv[2] = "-vec";
-		//argv[3] = "-vs";
-		//argv[4] = "128";
-		//argv[5] = "-dfs";
-	}
-	else {
-		argv = new const char* [argc];
+		argv[argc++] = "-I";
+		argv[argc++] = m_faustLibrariesPath;
+		//argv[argc++] = "-vec";
+		//argv[argc++] = "-vs";
+		//argv[argc++] = "128";
+		//argv[argc++] = "-dfs";
 	}
 
 	// optimization level
@@ -364,7 +359,7 @@ FaustCHOP::eval(const string& code)
 	}
 
 	dsp* theDsp = m_polyphony_enable ? m_dsp_poly : m_dsp;
-
+ 
 	// make new UI
 	if (m_midi_enable)
 	{
@@ -401,7 +396,15 @@ FaustCHOP::eval(const string& code)
 
 	return true;
 }
+ 
+               
+void
+FaustCHOP::getErrorString(OP_String *error, void *reserved1)
+{
+    error->setString(m_errorString.c_str());
+}
 
+               
 bool
 FaustCHOP::compile(const string& path)
 {
@@ -441,17 +444,14 @@ FaustCHOP::setup_touchdesigner_ui()
 		const string theCode = m_autoImport + "\n" + m_code;
 
 		// arguments
-		int argc = 1;		
-		const char** argv = new const char* [argc];
-		argv[0] = "-xml";
+		int argc = 0;		
+		const char** argv = new const char* [128];
+		argv[argc++] = "-xml";
 		if (strcmp(m_faustLibrariesPath, "") != 0) {
-			argc = 5;
-			argv = new const char* [argc];
-			argv[0] = "-xml";
-			argv[1] = "-I";
-			argv[2] = m_faustLibrariesPath;
-			argv[3] = "-O";
-			argv[4] = "dsp_output";
+			argv[argc++] = "-I";
+			argv[argc++] = m_faustLibrariesPath;
+			argv[argc++] = "-O";  // capital O for output directory
+			argv[argc++] = "dsp_output";
 		}
 
 		// This saves to an XML file on disk (undesirable side-effect).
@@ -460,6 +460,13 @@ FaustCHOP::setup_touchdesigner_ui()
 		generateAuxFilesFromString(m_name_app, theCode, argc, argv, myError);
 		if (strcmp(myError.c_str(), "") != 0) {
 			cerr << myError.c_str() << endl;
+		}
+
+		if (argv) {
+			for (int i = 0; i < argc; i++) {
+				argv[i] = NULL;
+			}
+			argv = NULL;
 		}
 	}
 	else {

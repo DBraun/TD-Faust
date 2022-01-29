@@ -126,7 +126,7 @@ private:
 	dsp* m_dsp = nullptr;
 	dsp_poly* m_dsp_poly = nullptr;
 	// faust compiler error string
-	string m_errorString;
+    string m_errorString = string("");
 	string m_name_app = string("");
 	// auto import
 	string m_autoImport;
@@ -160,4 +160,6 @@ private:
 
 	bool m_wantCompile = false;
 	//microseconds myDuration;
+    
+    void getErrorString(OP_String *error, void *reserved1);
 };
