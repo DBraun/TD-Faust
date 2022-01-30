@@ -34,7 +34,6 @@ cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_OSX_ARCHITECTURES="x86_64
 
 # Build TD-Faust (Release)
 xcodebuild -configuration Release -project build/TD-Faust.xcodeproj
-mv thirdparty/faust/build/lib/Release/libfaust.2.38.7.dylib thirdparty/faust/build/lib/Release/libfaust.2.dylib
 
 # Steps so that libfaust.2.dylib is found as a dependency
 install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib Release/TD-Faust.plugin/Contents/MacOS/TD-Faust

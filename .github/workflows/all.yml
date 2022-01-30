@@ -97,7 +97,7 @@ jobs:
     - name: Build LLVM
       run: |
         cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.llvm-options}} -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ZLIB=off
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off
         cmake --build build
     
     - name: Use CMake for TD-Faust
@@ -107,7 +107,6 @@ jobs:
     - name: Build TD-Faust (Release)
       run: |
         xcodebuild -configuration Release -project build/TD-Faust.xcodeproj
-        mv thirdparty/faust/build/lib/Release/libfaust.2.38.7.dylib thirdparty/faust/build/lib/Release/libfaust.2.dylib
         install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib Release/TD-Faust.plugin/Contents/MacOS/TD-Faust
 
     - name: Make distribution
