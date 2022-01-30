@@ -58,7 +58,6 @@ jobs:
   build-macos:
     strategy:
       matrix:
-        name: [macos-cmake]
         include:
           - name: macos-x86_64
             os: macos-latest
