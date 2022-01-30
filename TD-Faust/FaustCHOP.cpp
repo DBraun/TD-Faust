@@ -505,8 +505,8 @@ FaustCHOP::execute(CHOP_Output* output,
 	if (m_wantCompile) {
 
 		// update all variables that are necessary before compiling
-		m_faustLibrariesPath = inputs->getParString("Faustlibrariespath");
-		m_assetsDirPath = inputs->getParString("Assetspath");
+		m_faustLibrariesPath = inputs->getParFilePath("Faustlibrariespath");
+		m_assetsDirPath = inputs->getParFilePath("Assetspath");
 
 		m_polyphony_enable = polyEnable;
 		m_nvoices = inputs->getParInt("Nvoices");
