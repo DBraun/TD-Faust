@@ -70,16 +70,20 @@ jobs:
             llvm-options: >-
               -DLLVM_TARGETS_TO_BUILD="X86"
               -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-apple-darwin19.6.0"
-          - name: macos-arm64
-            os: macos-latest
-            cmake-options: >-
-              -DCMAKE_BUILD_TYPE=Release
-              -DCMAKE_VERBOSE_MAKEFILE=ON
-              -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
-              -DCMAKE_OSX_ARCHITECTURES="arm64"
-            llvm-options: >-
-              -DLLVM_TARGETS_TO_BUILD="AArch64"
-              -DLLVM_DEFAULT_TARGET_TRIPLE="arm64-apple-darwin19.6.0"
+          # # todo: we can't build arm64 LLVM yet on GitHub
+          # #       because the compiling procedure involves
+          # #       running what we compile?
+          # #       /bin/sh: ../../../bin/llvm-tblgen: Bad CPU type in executable
+          # - name: macos-arm64
+          #   os: macos-latest
+          #   cmake-options: >-
+          #     -DCMAKE_BUILD_TYPE=Release
+          #     -DCMAKE_VERBOSE_MAKEFILE=ON
+          #     -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
+          #     -DCMAKE_OSX_ARCHITECTURES="arm64"
+          #   llvm-options: >-
+          #     -DLLVM_TARGETS_TO_BUILD="AArch64"
+          #     -DLLVM_DEFAULT_TARGET_TRIPLE="arm64-apple-darwin19.6.0"
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
