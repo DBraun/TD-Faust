@@ -5,13 +5,13 @@ TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio 
  
 * FAUST code can be compiled "just-in-time" and run inside TouchDesigner.
 * Tested on Windows and macOS.
+* Automatically generated user interfaces of native TouchDesigner elements based on the FAUST code.
 * Up to 256 channels of input and 256 channels of output.
 * Pick your own sample rate.
 * Support for all of the standard [FAUST libraries](https://faustlibraries.grame.fr/) including
 * * High-order ambisonics
 * * WAV-file playback
 * * Oscillators, noises, filters, and more
-* Automatically generated user interfaces of native TouchDesigner elements based on the FAUST code.
 * MIDI data can be passed to FAUST via TouchDesigner CHOPs or hardware.
 * Support for [polyphonic MIDI](https://faustdoc.grame.fr/manual/midi/).
 * * You can address parameters of individual voices (like [MPE](https://en.wikipedia.org/wiki/MIDI#MIDI_Polyphonic_Expression)) or group them together.
@@ -32,15 +32,17 @@ Demo:
 
 ### Windows
 
-Run the latest `win64.exe` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy `C:/Program Files/Faust/share/faust/` to `C:/Program Files/Derivative/TouchDesigner/share/faust/`. If you're using a TouchDesigner executable in a different location, the destination path in this step would be different such as `C:\Program Files\Derivative\TouchDesigner.2021.38110\share\faust`.
+Run the latest `win64.exe` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy `C:/Program Files/Faust/share/faust/` to `C:/Program Files/Derivative/TouchDesigner/share/faust/`. If you're using a TouchDesigner executable in a different location, the destination path in this step would be different such as `C:\Program Files\Derivative\TouchDesigner.2021.38110\share\faust`. If you want the absolute latest version of Faust, you can create this `share/faust` folder by copying from [Faust Libraries](https://github.com/grame-cncm/faustlibraries).
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, and `sndfile.dll` to this repository's `Plugins` folder.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, and `sndfile.dll` to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
 ### macOS
 
-Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). If you have an M1 ("Apple Silicon"), choose `*arm64.dmg`, otherwise choose `*x64.dmg`. After installing, copy `Faust-2.X/share/faust/` to `/usr/local/share/faust`.
+Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). If you have an M1 ("Apple Silicon"), choose `*arm64.dmg`, otherwise choose `*x64.dmg`. After installing, copy `Faust-2.X/share/faust/` to `/usr/local/share/faust`. If you want the absolute latest version of Faust, you can create this `share/faust` folder by copying from [Faust Libraries](https://github.com/grame-cncm/faustlibraries).
 
-Due to some difficulties with codesigning, for the moment you must compile TD-Faust on your own computer.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib` and `TD-Faust.plugin` to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
+
+If there's a warning about the codesigning certificate, you may need to compile TD-Faust on your own computer.
 
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
@@ -48,8 +50,6 @@ Due to some difficulties with codesigning, for the moment you must compile TD-Fa
 4. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like `Apple Development: example@example.com (ABCDE12345)`. Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
 5. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`
 6. Open `TD-Faust.toe`
-
-<!-- Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib` and `TD-Faust.plugin` to this repository's `Plugins` folder. -->
 
 ## Tutorial
 
@@ -78,11 +78,15 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 
 ### Setup UI
 
-After compiling, press the `Setup UI` button to build a UI in the `Viewer COMP`. This step will save an XML file inside a directory called `dsp_output`. It will also print out information inside the TouchDesigner console. On your operating system, you should set the environment variable `TOUCH_TEXT_CONSOLE` to 1. Then restart TouchDesigner and you'll start seeing the text console window.
+One great feature of TD-Faust is that user interfaces that appear in the Faust code can become [Custom Parameters](https://docs.derivative.ca/Custom_Parameters) by pressing the "Setup UI" button. Take a look at the simple Faust code below:
 
-After "Setup UI" is pressed, the Faust base will create a secondary page of custom parameters titled "Control".
+```faust
+import("stdfaust.lib");
+volume = hslider("Volume", 1., 0., 1., ma.EPSILON);
+process = os.osc(440.)*volume <: _, _;
+```
 
-In a *non-polyphonic example*, this is an example of the important printout section:
+After compiling this code, press the `Setup UI` button to build a UI in the `Viewer COMP`. The Faust base will create a secondary page of custom parameters titled "Control", and because of the code we've written there will be one custom Float parameter named "Volume". Setting up the UI like this works by saving an XML file inside a directory called `dsp_output`. It will also print out information inside the TouchDesigner console. On your operating system, you should set the environment variable `TOUCH_TEXT_CONSOLE` to 1. Then restart TouchDesigner and you'll start seeing the text console window. In a *non-polyphonic example*, this is an example of the important printout section:
 
 <details>
 <summary>non-polyphonic example</summary>
@@ -186,7 +190,7 @@ Note how there is a set of parameters for each voice. All parameters can be addr
 
 ### Group Voices and Dynamic Voices
 
-* The `Group Voices` and `Dynamic Voices` toggles matter when using [polyphony](https://faustdoc.grame.fr/manual/midi/). You should also read the `Setup UI` section above.
+The `Group Voices` and `Dynamic Voices` toggles matter when using [polyphony](https://faustdoc.grame.fr/manual/midi/). You should also read the `Setup UI` section above.
 
 If you enable `Group Voices`, one set of parameters will control all voices at once. Otherwise, you will need to address a set of parameters for each voice.
 
