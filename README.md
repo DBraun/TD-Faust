@@ -215,9 +215,9 @@ In TouchDesigner, we can press "Setup UI" to get a "Volume" custom parameter on 
 
 2. Create a higher sample-rate control signal, possibly as high as the Faust CHOP, and connect it to the Faust base.
 
-## Using TD-Faust in New Projects
+### Using TD-Faust in New Projects
 
-In this repository, copy the `toxes/Faust` structure into your new project. You should have:
+In this repository, copy the `toxes/FAUST` structure into your new project. You should have:
 
 * `MyProject/MyProject.toe`
 * `MyProject/toxes/FAUST/FAUST.tox`
@@ -225,7 +225,7 @@ In this repository, copy the `toxes/Faust` structure into your new project. You 
 
 and any other files which are sibling to FAUST.tox
 
-Now copy `FAUST.tox` into your new project, probably near the root. It acts as a [Global OP Shortcut](https://docs.derivative.ca/Global_OP_Shortcut). Next, copy `main_faust_base.tox` into the project and use it in a way similar to how it's used in `TD-Faust.toe`.
+Now copy `FAUST.tox` into your new TouchDesigner project, probably near the root. `FAUST.tox` acts as a [Global OP Shortcut](https://docs.derivative.ca/Global_OP_Shortcut). Next, copy `main_faust_base.tox` into the project and use it in a way similar to how it's used in `TD-Faust.toe`.
 
 ## Licenses / Thank You
 
