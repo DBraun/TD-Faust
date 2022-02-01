@@ -160,6 +160,8 @@ private:
 
 	bool m_wantCompile = false;
 	//microseconds myDuration;
+
+	int m_blockSize = 0;
     
     void getErrorString(OP_String *error, void *reserved1);
 };

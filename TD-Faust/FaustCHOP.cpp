@@ -535,15 +535,19 @@ FaustCHOP::execute(CHOP_Output* output,
 	const OP_CHOPInput* controlInput = inputs->getInputCHOP(1);
 	const OP_CHOPInput* midiInput = inputs->getInputCHOP(2);
 
-	int blockSize = 1024;
+	m_blockSize = 1024;
 
 	if (controlInput && controlInput->numChannels) {
-		blockSize = std::min(blockSize, (int) (m_srate/controlInput->sampleRate));
+		m_blockSize = std::min(m_blockSize, (int) (m_srate/controlInput->sampleRate));
 	}
 	if (midiInput && midiInput->numChannels) {
-		blockSize = std::min(blockSize, (int)(m_srate / midiInput->sampleRate));
+		m_blockSize = std::min(m_blockSize, (int)(m_srate / midiInput->sampleRate));
 	}
-	blockSize = std::max(blockSize, 1);
+	m_blockSize = std::max(m_blockSize, 1);
+
+	if (m_blockSize > m_allocatedSamples) {
+		allocate(m_numInputChannels, m_numOutputChannels, m_blockSize);
+	}
 
 	if (audioInput)
 	{
@@ -589,7 +593,7 @@ FaustCHOP::execute(CHOP_Output* output,
 
 	int chan = 0;
 
-	for (int i = 0; i < output->numSamples; i += blockSize) {
+	for (int i = 0; i < output->numSamples; i += m_blockSize) {
 
 		if (controlInput) {
 
@@ -614,11 +618,7 @@ FaustCHOP::execute(CHOP_Output* output,
 			}
 		}
 
-		numSamples = min(output->numSamples - i, blockSize);
-
-		if (numSamples > m_allocatedSamples) {
-			allocate(m_numInputChannels, m_numOutputChannels, numSamples);
-		}
+		numSamples = min(output->numSamples - i, m_blockSize);
 
 		if (midiInput && m_polyphony_enable && m_dsp_poly) {
 
@@ -680,7 +680,7 @@ FaustCHOP::getNumInfoCHOPChans(void* reserved1)
 {
 	// We return the number of channel we want to output to any Info CHOP
 	// connected to the CHOP. In this example we are just going to send one channel.
-	return 2;
+	return 3;
 }
 
 void
@@ -703,6 +703,10 @@ FaustCHOP::getInfoCHOPChan(int32_t index,
 	else if (index == 1) {
 		chan->name->setString("inputs");
 		chan->value = m_numInputChannels || 0;
+	}
+	else if (index == 2) {
+		chan->name->setString("blockSize");
+		chan->value = m_blockSize;
 	}
 }
 
