@@ -705,7 +705,7 @@ FaustCHOP::getInfoCHOPChan(int32_t index,
 		chan->value = m_numInputChannels || 0;
 	}
 	else if (index == 2) {
-		chan->name->setString("blockSize");
+		chan->name->setString("block_size");
 		chan->value = m_blockSize;
 	}
 }
