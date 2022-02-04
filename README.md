@@ -86,7 +86,7 @@ volume = hslider("Volume", 1., 0., 1., ma.EPSILON);
 process = os.osc(440.)*volume <: _, _;
 ```
 
-After compiling this code, press the `Setup UI` button to build a UI in the `Viewer COMP`. The Faust base will create a secondary page of custom parameters titled "Control", and because of the code we've written there will be one custom Float parameter named "Volume". Setting up the UI like this works by saving an XML file inside a directory called `dsp_output`. It will also print out information inside the TouchDesigner console. On your operating system, you should set the environment variable `TOUCH_TEXT_CONSOLE` to 1. Then restart TouchDesigner and you'll start seeing the text console window. In a *non-polyphonic example*, this is an example of the important printout section:
+After compiling this code, press the `Setup UI` button to build a UI in the `Viewer COMP`. The Faust base will create a secondary page of custom parameters titled "Control", and because of the code we've written there will be one custom Float parameter named "Volume". Setting up the UI like this works by saving an XML file inside a directory called `dsp_output`. It will also print out information inside the TouchDesigner Console, which can be accesssed from the [Dialogs menu](https://docs.derivative.ca/Dialog). In a *non-polyphonic example*, this is an example of the important printout section:
 
 <details>
 <summary>non-polyphonic example</summary>
