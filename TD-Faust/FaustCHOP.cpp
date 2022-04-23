@@ -108,6 +108,7 @@ FaustCHOP::FaustCHOP(const OP_NodeInfo* info) : myNodeInfo(info)
 	m_dsp_poly = NULL;
 	m_ui = NULL;
 	m_midi_ui = NULL;
+	json_ui = NULL;
 	m_soundUI = NULL;
 	// zero
 	m_input = NULL;
@@ -192,6 +193,7 @@ FaustCHOP::clear()
 	SAFE_DELETE(m_ui);
 	SAFE_DELETE(m_dsp_poly);
 	SAFE_DELETE(m_midi_ui);
+	SAFE_DELETE(json_ui);
 	SAFE_DELETE(m_soundUI);
 
 	//deleteAllDSPFactories();  // don't actually do this!!
@@ -298,11 +300,11 @@ FaustCHOP::eval(const string& code)
 
 	// create new factory
 	if (m_polyphony_enable) {
-		m_poly_factory = createPolyDSPFactoryFromString(m_name_app, theCode,
+		m_poly_factory = createPolyDSPFactoryFromString("TD", theCode,
 			argc, argv, target.c_str(), m_errorString, optimize);
 	}
 	else {
-		m_factory = createDSPFactoryFromString(m_name_app, theCode,
+		m_factory = createDSPFactoryFromString("TD", theCode,
 			argc, argv, target.c_str(), m_errorString, optimize);
 	}
 
@@ -380,6 +382,19 @@ FaustCHOP::eval(const string& code)
 	// get channels
 	int inputs = theDsp->getNumInputs();
 	int outputs = theDsp->getNumOutputs();
+
+	std::vector<std::string> library_list;
+	std::vector<std::string> include_pathnames = { m_faustLibrariesPath };
+
+	delete json_ui;
+	json_ui = new JSONUI(m_name_app, "", inputs, outputs, (int)m_srate, "", "", "", "", library_list, include_pathnames, -1, PathTableType(), MemoryLayoutType());
+	theDsp->buildUserInterface(json_ui);
+
+	ofstream myfile;
+	myfile.open("dsp_output/" + m_name_app + ".json");
+	myfile.seekp(0, ios::beg);
+	myfile << json_ui->JSON(false);
+	myfile.close();
 
 	// see if we need to alloc
 	if (inputs != m_numInputChannels || outputs != m_numOutputChannels) {

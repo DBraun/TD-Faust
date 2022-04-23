@@ -16,7 +16,7 @@ class FaustGlobal:
 		# The component to which this extension is attached
 		self.ownerComp = ownerComp
 
-	def SetupUI(self, faust_xml, basecontrol, ui_comp):
+	def SetupUI(self, faust_json: str, basecontrol, ui_comp):
 
 		ui_builder = mod.ui_building.FaustUIBuilder()
-		ui_builder.build_ui(faust_xml, basecontrol, ui_comp)
+		ui_builder.build_ui(faust_json, basecontrol, ui_comp)

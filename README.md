@@ -32,15 +32,11 @@ Demo:
 
 ### Windows
 
-Run the latest `win64.exe` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). After installing, copy `C:/Program Files/Faust/share/faust/` to `C:/Program Files/Derivative/TouchDesigner/share/faust/`. If you're using a TouchDesigner executable in a different location, the destination path in this step would be different such as `C:\Program Files\Derivative\TouchDesigner.2021.38110\share\faust`. If you want the absolute latest version of Faust, you can create this `share/faust` folder by copying from [Faust Libraries](https://github.com/grame-cncm/faustlibraries).
-
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, and `sndfile.dll` to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, `sndfile.dll`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
 ### macOS
 
-Run the latest `.dmg` installer from FAUST's [releases](https://github.com/grame-cncm/faust/releases). If you have an M1 ("Apple Silicon"), choose `*arm64.dmg`, otherwise choose `*x64.dmg`. After installing, copy `Faust-2.X/share/faust/` to `/usr/local/share/faust`. If you want the absolute latest version of Faust, you can create this `share/faust` folder by copying from [Faust Libraries](https://github.com/grame-cncm/faustlibraries).
-
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib` and `TD-Faust.plugin` to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib`, `TD-Faust.plugin`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
 If there's a warning about the codesigning certificate, you may need to compile TD-Faust on your own computer.
 

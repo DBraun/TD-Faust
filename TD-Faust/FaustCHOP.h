@@ -36,6 +36,7 @@ which is MIT-Licensed.
 #include "faust/gui/MidiUI.h"
 #include "faust/gui/UI.h"
 #include "faust/gui/GUI.h"
+#include "faust/gui/JSONUI.h"
 #include "faust/gui/SoundUI.h"
 //#include "faust/gui/httpdUI.h"
 //#include "faust/gui/OSCUI.h"
@@ -152,6 +153,7 @@ private:
 
 	// UI
 	MidiUI* m_midi_ui = nullptr;
+	JSONUI* json_ui = nullptr;
 	FaustCHOPUI* m_ui = nullptr;
 	SoundUI* m_soundUI = nullptr;
 
