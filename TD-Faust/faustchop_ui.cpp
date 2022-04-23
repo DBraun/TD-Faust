@@ -86,7 +86,7 @@ public:
         for (; iter != fItems.end(); iter++)
         {
             // print
-            cerr << iter->fPath << " : " << (iter->fItemType) << endl;
+            cerr << iter->fPath << endl;
         }
     }
 };

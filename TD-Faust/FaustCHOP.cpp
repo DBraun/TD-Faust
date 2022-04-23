@@ -30,6 +30,7 @@ which is MIT-Licensed.
 #include <vector>
 #include <map>
 #include <fstream>
+#include <filesystem>
 using namespace std;
 
 #ifndef SAFE_DELETE
@@ -272,8 +273,13 @@ FaustCHOP::eval(const string& code)
 	// arguments
 	int argc = 0;
 	const char** argv = new const char* [128];
+
+	auto faustlibrariespath = std::filesystem::path(myNodeInfo->pluginPath).parent_path().append("faustlibraries").string();
+	argv[argc++] = "--import-dir";
+	argv[argc++] = faustlibrariespath.c_str();
+
 	if (std::strcmp(m_faustLibrariesPath, "") != 0) {
-		argv[argc++] = "-I";
+		argv[argc++] = "--import-dir";
 		argv[argc++] = m_faustLibrariesPath;
 		//argv[argc++] = "-vec";
 		//argv[argc++] = "-vs";
@@ -384,7 +390,7 @@ FaustCHOP::eval(const string& code)
 	int outputs = theDsp->getNumOutputs();
 
 	std::vector<std::string> library_list;
-	std::vector<std::string> include_pathnames = { m_faustLibrariesPath };
+	std::vector<std::string> include_pathnames;
 
 	delete json_ui;
 	json_ui = new JSONUI(m_name_app, "", inputs, outputs, (int)m_srate, "", "", "", "", library_list, include_pathnames, -1, PathTableType(), MemoryLayoutType());
@@ -454,34 +460,6 @@ FaustCHOP::setup_touchdesigner_ui()
 			cerr << "Number of Inputs: " << m_numInputChannels << endl;
 			cerr << "Number of Outputs: " << m_numOutputChannels << endl;
 			cerr << "-----------------------------------------------------------" << endl;
-		}
-
-		const string theCode = m_autoImport + "\n" + m_code;
-
-		// arguments
-		int argc = 0;		
-		const char** argv = new const char* [128];
-		argv[argc++] = "-xml";
-		if (strcmp(m_faustLibrariesPath, "") != 0) {
-			argv[argc++] = "-I";
-			argv[argc++] = m_faustLibrariesPath;
-			argv[argc++] = "-O";  // capital O for output directory
-			argv[argc++] = "dsp_output";
-		}
-
-		// This saves to an XML file on disk (undesirable side-effect).
-		// It would be better to get it to a variable.
-		string myError;
-		generateAuxFilesFromString(m_name_app, theCode, argc, argv, myError);
-		if (strcmp(myError.c_str(), "") != 0) {
-			cerr << myError.c_str() << endl;
-		}
-
-		if (argv) {
-			for (int i = 0; i < argc; i++) {
-				argv[i] = NULL;
-			}
-			argv = NULL;
 		}
 	}
 	else {
@@ -925,17 +903,6 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
-	// Save UI
-	{
-		OP_NumericParameter	np;
-
-		np.name = "Setupuipulse";
-		np.label = "Setup UI";
-
-		OP_ParAppendResult res = manager->appendPulse(np);
-		assert(res == OP_ParAppendResult::Success);
-	}
-
 	// Reset
 	{
 		OP_NumericParameter	np;
@@ -992,10 +959,5 @@ FaustCHOP::pulsePressed(const char* name, void* reserved1)
 	if (!strcmp(name, "Clearmidi"))
 	{
 		clearMIDI();
-	}
-
-	if (!strcmp(name, "Setupuipulse"))
-	{
-		setup_touchdesigner_ui();
 	}
 }

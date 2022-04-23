@@ -47,6 +47,8 @@ jobs:
         move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
         move ${{ github.workspace }}/Plugins/faust.dll TD-Faust_dist
         cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/bin/sndfile.dll TD-Faust_dist
+        cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
+        Remove-Item -Recurse -Force "TD-Faust_dist/faustlibraries/.git"
         tar.exe -c -f TD-Faust-${{ matrix.os }}.zip TD-Faust_dist
 
     - name: Upload artifact
@@ -117,6 +119,8 @@ jobs:
         mkdir TD-Faust_dist
         cp ${{ github.workspace }}/thirdparty/faust/build/lib/Release/libfaust.2.dylib TD-Faust_dist
         mv ${{ github.workspace }}/Release/TD-Faust.plugin TD-Faust_dist
+        cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
+        rm -rf TD-Faust_dist/faustlibraries/.git
         zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
 
     - name: Upload artifact

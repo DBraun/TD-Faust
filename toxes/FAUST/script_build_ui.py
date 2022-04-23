@@ -1,9 +1,12 @@
 import math
 import re
 import json
+from typing import NamedTuple
+
+# import TouchDesigner
 import td
 
-from typing import NamedTuple
+WIDGET_TYPES = ['button', 'checkbox', 'nentry', 'hslider', 'vslider']
 
 
 class Widget(NamedTuple):
@@ -50,8 +53,6 @@ def setup_par_menu(par: td.Par, item):
 	par.menuNames = ['i' + str(i) for i in items]
 	par.menuLabels = [str(i) for i in items]
 
-
-WIDGET_TYPES = ['button', 'checkbox', 'nentry', 'hslider', 'vslider']
 
 class FaustUIBuilder:
 
@@ -106,16 +107,16 @@ class FaustUIBuilder:
 
 		root = json.loads(faust_json)
 
-		self.instrument_name = root["name"]
+		# root["name"]  # todo: use this?
 
 		if root['ui']:
 			item = root['ui'][0]
-			self._add_ui('', item, 0, uic)
+			self._add_ui(item, 0, uic)
 
 		for widget in self.widgets.values():
 			dat.appendRow([widget.par.name, widget.address])
 
-	def _add_ui(self, path: str, item, i: int, container: td.COMP):
+	def _add_ui(self, item, i: int, container: td.COMP):
 
 		FAUST = op.FAUST
 
@@ -129,11 +130,12 @@ class FaustUIBuilder:
 		label = item['label']
 			
 		# is the item something that corresponds to a td.Par?
-		if item['type'] in WIDGET_TYPES:
+		if widgettype in WIDGET_TYPES:
 
 			address = legal_chan_name(item['address'])
 
-			if address.split('/')[-1] in ["gate", "gain", "note", "freq"] and self.basecontrol.par.Polyphony.eval():
+			polyphony = self.basecontrol.par.Polyphony.eval()
+			if address.split('/')[-1].lower() in ["gate", "gain", "note", "freq"] and polyphony:
 				# Skip these parameters when Polyphony is enabled.
 				pass
 			else:
@@ -174,17 +176,22 @@ class FaustUIBuilder:
 					widget_source = FAUST.op('./masterCheckbox')
 				elif widgettype == 'nentry':
 					widget_source = FAUST.op('./masterDropMenu')
+				else:
+					raise ValueError(f'Unexpected widget type: {widget_source}')
 					
 				# Look for meta tags such as [style:knob]
+				is_knob = False
 				for meta in (item['meta'] if 'meta' in item else []):
 					if 'style' in meta:
 						if meta['style'] == 'knob':
 							widget_source = FAUST.op('./masterKnob')
+							is_knob = True
 					if 'tooltip' in meta:
+						tooltip = meta['tooltip']
 						# todo: remove double white space in the tooltip
-						widget.par.help = meta['tooltip']
+						widget.par.help = tooltip
 
-				if widgettype != 'soundfile':
+				if container is not None and widgettype != 'soundfile':
 
 					widget = self.widgets[address]
 
@@ -194,13 +201,14 @@ class FaustUIBuilder:
 					
 					# add label to the widget
 					if widgettype in ['hslider', 'vslider']:
-						if widget_source == FAUST.op('./masterKnob'):
+						if is_knob:
 							new_widget.par.Knoblabel = '"' + widget.par.label + '"'
 						else:
 							new_widget.par.Sliderlabelnames = '"' + widget.par.label + '"'
 					elif widgettype == 'button':
 						new_widget.par.Buttonofflabel = new_widget.par.Buttononlabel = widget.par.label
 					elif widgettype == 'checkbox':
+						# todo: don't print
 						print('CHECKBOX: ' + str(widget.par.name))
 					elif widgettype == 'nentry':
 						new_widget.par.Menunames = " ".join(["'{0}'".format(a) for a in widget.par.menuNames])
@@ -223,9 +231,9 @@ class FaustUIBuilder:
 		other_items = item['items'] if 'items' in item else []
 		for j, group in enumerate(other_items):
 		
-			if group['type'] not in WIDGET_TYPES:
+			if container is not None and group['type'] not in WIDGET_TYPES:
 				# create a new container for the group
-				legalName = group['label'].replace('/','')
+				legalName = group['label'].replace('/','_')
 				legalName = tdu.legalName(legalName)
 				newContainer = container.create(containerCOMP, legalName)
 				newContainer.nodeX = j*250
@@ -234,4 +242,4 @@ class FaustUIBuilder:
 				newContainer = container
 		
 			# recursively add UI
-			self._add_ui(path, group, j, newContainer)
+			self._add_ui(group, j, newContainer)
