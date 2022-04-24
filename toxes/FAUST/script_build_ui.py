@@ -6,7 +6,8 @@ from typing import NamedTuple
 # import TouchDesigner
 import td
 
-WIDGET_TYPES = ['button', 'checkbox', 'nentry', 'hslider', 'vslider']
+# active widget types are ones which will need custom parameters on a Base COMP.
+ACTIVE_WIDGET_TYPES = ['button', 'checkbox', 'nentry', 'hslider', 'vslider']
 
 
 class Widget(NamedTuple):
@@ -98,6 +99,7 @@ class FaustUIBuilder:
 		if uic is not None:
 			for anOp in uic.ops('./*'):
 				anOp.destroy()
+			uic.par.align = 'verttb'
 
 		dat = basecontrol.op('./rename_pars_dat')
 		dat.clear()
@@ -118,19 +120,14 @@ class FaustUIBuilder:
 
 	def _add_ui(self, item, i: int, container: td.COMP):
 
-		FAUST = op.FAUST
+		FAUST_WIDGETS = op.FAUST.op('./faust_widgets')
 
 		widgettype = item['type'] # hgroup, vgroup, tgroup, or other
-		if container is not None:
-			if widgettype == 'hgroup':
-				container.par.align = 'horizlr'
-			elif widgettype == 'vgroup':
-				container.par.align = 'verttb'
 		
 		label = item['label']
 			
 		# is the item something that corresponds to a td.Par?
-		if widgettype in WIDGET_TYPES:
+		if widgettype in ACTIVE_WIDGET_TYPES:
 
 			address = legal_chan_name(item['address'])
 
@@ -167,15 +164,15 @@ class FaustUIBuilder:
 				
 				# add the widget to the UI container.
 				if widgettype == 'vslider':
-					widget_source = FAUST.op('./masterSlider_vert')
+					widget_source = FAUST_WIDGETS.op('./masterSlider_vert')
 				elif widgettype == 'hslider':
-					widget_source = FAUST.op('./masterSlider_horz')
+					widget_source = FAUST_WIDGETS.op('./masterSlider_horz')
 				elif widgettype == 'button':
-					widget_source = FAUST.op('./masterButton')
+					widget_source = FAUST_WIDGETS.op('./masterButton')
 				elif widgettype == 'checkbox':
-					widget_source = FAUST.op('./masterCheckbox')
+					widget_source = FAUST_WIDGETS.op('./masterCheckbox')
 				elif widgettype == 'nentry':
-					widget_source = FAUST.op('./masterDropMenu')
+					widget_source = FAUST_WIDGETS.op('./masterDropMenu')
 				else:
 					raise ValueError(f'Unexpected widget type: {widget_source}')
 					
@@ -184,11 +181,12 @@ class FaustUIBuilder:
 				for meta in (item['meta'] if 'meta' in item else []):
 					if 'style' in meta:
 						if meta['style'] == 'knob':
-							widget_source = FAUST.op('./masterKnob')
+							widget_source = FAUST_WIDGETS.op('./masterKnob')
 							is_knob = True
 					if 'tooltip' in meta:
 						tooltip = meta['tooltip']
-						# todo: remove double white space in the tooltip
+						# remove double white space in the tooltip
+						tooltip = re.sub("\s+"," ", tooltip)
 						widget.par.help = tooltip
 
 				if container is not None and widgettype != 'soundfile':
@@ -202,44 +200,76 @@ class FaustUIBuilder:
 					# add label to the widget
 					if widgettype in ['hslider', 'vslider']:
 						if is_knob:
-							new_widget.par.Knoblabel = '"' + widget.par.label + '"'
+							new_widget.par.Knoblabel = widget.par.label
 						else:
 							new_widget.par.Sliderlabelnames = '"' + widget.par.label + '"'
 					elif widgettype == 'button':
 						new_widget.par.Buttonofflabel = new_widget.par.Buttononlabel = widget.par.label
 					elif widgettype == 'checkbox':
-						# todo: don't print
-						print('CHECKBOX: ' + str(widget.par.name))
+						# todo: add a label to the checkbox somehow
+						pass
 					elif widgettype == 'nentry':
 						new_widget.par.Menunames = " ".join(["'{0}'".format(a) for a in widget.par.menuNames])
 						new_widget.par.Menulabels = " ".join(["'{0}'".format(a) for a in widget.par.menuLabels])
 					
 					# add binding to the widget
-					new_widget.par.display = True
 					new_widget.par.Value0.mode = ParMode.BIND
 					new_widget.par.Value0.bindExpr = f'op("{self.basecontrol.path}").par.{widget.par.name}'
 					new_widget.par.Value0.bindRange = True
 
 		elif widgettype == 'soundfile':
 			pass
-		elif widgettype in ['tgroup', 'vgroup', 'hgroup']:
+		elif widgettype in ['hgroup', 'vgroup', 'tgroup']:
+			if container is not None:
+				# don't create header when the first header is named TD
+				if container != self.uic or label != 'TD':
+					widget_source = FAUST_WIDGETS.op('./masterHeader')
+					name = tdu.legalName(label.replace('/','_'))
+					new_widget = container.copy(widget_source, name=name, includeDocked=True)
+					new_widget.par.Headerlabel = label
+		elif widgettype in ['vbargraph', 'hbargraph']:
 			pass
 		else:
 			raise ValueError('Unexpected widget type: ' + widgettype)
 		
 		# For all groups inside, recursively add UI
 		other_items = item['items'] if 'items' in item else []
-		for j, group in enumerate(other_items):
-		
-			if container is not None and group['type'] not in WIDGET_TYPES:
-				# create a new container for the group
-				legalName = group['label'].replace('/','_')
+
+		if container is not None and other_items:
+
+			if widgettype in ['hgroup', 'vgroup', 'tgroup']:
+
+				legalName = label.replace('/','_')
 				legalName = tdu.legalName(legalName)
-				newContainer = container.create(containerCOMP, legalName)
-				newContainer.nodeX = j*250
-				newContainer.viewer = True
-			else:
-				newContainer = container
-		
-			# recursively add UI
-			self._add_ui(group, j, newContainer)
+
+				container = container.create(containerCOMP, legalName)
+				container.viewer = True
+				container.par.hmode = 'fill'
+				container.par.vmode = 'fill'
+
+				if widgettype == 'hgroup':
+					container.par.align = 'horizlr'
+				elif widgettype == 'vgroup':
+					container.par.align = 'verttb'
+				elif widgettype == 'tgroup':
+					# todo: make this different
+					container.par.align = 'horizlr'
+
+			for j, group in enumerate(other_items):
+			
+				if container is not None and group['type'] not in ACTIVE_WIDGET_TYPES:
+					# create a new container for the group
+					legalName = group['label'].replace('/','_')
+					legalName = tdu.legalName(legalName)
+					newContainer = container.create(containerCOMP, legalName)
+					newContainer.nodeX = j*250
+					newContainer.viewer = True
+					newContainer.par.hmode = 'fill'
+					newContainer.par.vmode = 'fill'
+					newContainer.par.align = 'verttb'
+					newContainer.par.alignorder = j
+				else:
+					newContainer = container
+			
+				# recursively add UI
+				self._add_ui(group, j, newContainer)
