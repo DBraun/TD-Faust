@@ -33,13 +33,13 @@ class FaustCHOPUI : public APIUI
 public:
 
     void
-    addParameter(const char* label,
-        FAUSTFLOAT* zone,
-        FAUSTFLOAT init,
-        FAUSTFLOAT min,
-        FAUSTFLOAT max,
-        FAUSTFLOAT step,
-        ItemType type) {
+        addParameter(const char* label,
+            FAUSTFLOAT* zone,
+            FAUSTFLOAT init,
+            FAUSTFLOAT min,
+            FAUSTFLOAT max,
+            FAUSTFLOAT step,
+            ItemType type) {
 
         // The superclass APIUI is going to build a path based on the label,
         // but we can't create a path that's incompatible with what TouchDesigner
@@ -57,8 +57,11 @@ public:
 
         APIUI::addParameter(safeLabel.c_str(),
             zone, init, min, max, step, type
-            );
+        );
 
+        if (type == kVBargraph || type == kHBargraph) {
+            m_mapIntToAddress[getNumBarGraphs()] = safeLabel;
+        }
     }
 
     void openTabBox(const char* label) { pushLabel(cleanLabel(label)); }
@@ -79,7 +82,7 @@ public:
     }
 
     void
-    dumpParams() {
+        dumpParams() {
         // iterator
         auto iter = fItems.begin();
         // go
@@ -89,4 +92,24 @@ public:
             cerr << iter->fPath << endl;
         }
     }
+
+    float getNthBarGraph(int n) {
+        return this->getParamValue(getNthBarGraphAddress(n).c_str());
+    }
+
+    std::string getNthBarGraphAddress(int n) {
+
+        auto search = m_mapIntToAddress.find(n);
+        if (search != m_mapIntToAddress.end()) {
+            return search->second;
+        }
+        return std::string("");
+    }
+
+    int getNumBarGraphs() {
+        return m_mapIntToAddress.size();
+    }
+
+private:
+    std::map<int, std::string> m_mapIntToAddress;
 };
