@@ -9,6 +9,7 @@ import td
 # active widget types are ones which will need custom parameters on a Base COMP.
 ACTIVE_WIDGET_TYPES = ['button', 'checkbox', 'nentry', 'hslider', 'vslider']
 PASSIVE_WIDGET_TYPES = ['hbargraph', 'vbargraph']
+CONTAINER_WIDGET_TYPES = ['hgroup', 'vgroup', 'tgroup']
 
 class Widget(NamedTuple):
     type: str
@@ -161,15 +162,15 @@ class FaustUIBuilder:
 
 		return self.widgets[address]
 
-	def _add_widget_ui(self, widget: Widget, i: int, container: td.COMP):
+	def _add_widget_ui(self, widget: Widget, i: int, container: td.COMP, children_items):
 
 		if container is None:
-			return
+			return None
 
 		FAUST_WIDGETS = op.FAUST.op('./faust_widgets')
 
 		widgettype = widget.type
-
+					
 		# add the widget to the UI container.
 		if widgettype == 'vslider':
 			widget_source = FAUST_WIDGETS.op('./masterSlider_vert')
@@ -185,6 +186,13 @@ class FaustUIBuilder:
 			widget_source = FAUST_WIDGETS.op('./masterBarGraph')
 		elif widgettype == 'vbargraph':
 			widget_source = FAUST_WIDGETS.op('./masterBarGraph')
+		elif widgettype in ['hgroup', 'vgroup']:
+			widget_source = FAUST_WIDGETS.op('./masterHeader')
+			# edge case where we don't want to create the header
+			if widget.address == 'TD' or widget.address == '0x00':
+				return None
+		elif widgettype == 'tgroup':
+			widget_source = FAUST_WIDGETS.op('./masterRadio')
 		else:
 			raise ValueError(f'Unexpected widget type: {widget_source}')
 			
@@ -224,6 +232,19 @@ class FaustUIBuilder:
 			new_widget.par.Sliderorient = 'horz'
 		elif widgettype == 'vbargraph':
 			new_widget.par.Sliderorient = 'vert'
+		elif widgettype in ['hgroup', 'vgroup']:
+			if widget.address == 'DSP1':
+				new_widget.par.Headerlabel = "Instrument"
+			elif widget.address == 'DSP2':
+				new_widget.par.Headerlabel = "Effect"
+			else:
+				new_widget.par.Headerlabel = widget.address
+		elif widgettype == 'tgroup':
+			new_widget.par.Widgetlabel = widget.address
+			if container == self.uic and self.basecontrol.par.Polyphony.eval():
+				new_widget.par.Radiolabels = "Instrument Effect"
+			else:
+				new_widget.par.Radiolabels = " ".join([f'"{child["label"]}"' for child in children_items])
 		else:
 			raise ValueError(f'Unexpected widget type: {widgettype}')
 
@@ -235,83 +256,86 @@ class FaustUIBuilder:
 			new_widget.par.Value0.mode = ParMode.BIND
 			new_widget.par.Value0.bindExpr = f'op("{self.basecontrol.path}").par.{widget.par.name}'
 			new_widget.par.Value0.bindRange = True
+		elif widgettype in CONTAINER_WIDGET_TYPES:
+			pass
 		else:
 			raise ValueError(f'Unexpected widget type: {widgettype}')
+
+		return new_widget
 
 
 	def _add_ui(self, item, i: int, container: td.COMP):
 
-		FAUST_WIDGETS = op.FAUST.op('./faust_widgets')
-
 		widgettype = item['type'] # hgroup, vgroup, tgroup, or other
 		
 		label = item['label']
-			
-		# is the item something that corresponds to a td.Par?
-		if widgettype in (ACTIVE_WIDGET_TYPES + PASSIVE_WIDGET_TYPES):
 
-			address = legal_chan_name(item['address'])
-
-			polyphony = self.basecontrol.par.Polyphony.eval()
-			name = address.split('/')[-1]
-			if name.lower() in ["gate", "gain", "note", "freq"] and polyphony:
-				# Skip these parameters when Polyphony is enabled.
-				pass
-			else:
-				widget = self._create_widget(item)
-	
-				self._add_widget_ui(widget, i, container)
-
-		elif widgettype == 'soundfile':
-			pass
-		elif widgettype in ['hgroup', 'vgroup', 'tgroup']:
-			if container is not None:
-				# don't create header when the first header is named TD
-				if container != self.uic or label != 'TD':
-					widget_source = FAUST_WIDGETS.op('./masterHeader')
-					new_widget = container.copy(widget_source, name=name, includeDocked=True)
-					new_widget.par.Headerlabel = label
-		else:
-			raise ValueError('Unexpected widget type: ' + widgettype)
-		
 		# For all groups inside, recursively add UI
 		children_items = item['items'] if 'items' in item else []
 
-		if container is not None and children_items:
+		new_widget_ui = None
 
-			if widgettype in ['hgroup', 'vgroup', 'tgroup']:
+		# is the item something that corresponds to a td.Par?
+		if widgettype in (ACTIVE_WIDGET_TYPES + PASSIVE_WIDGET_TYPES + CONTAINER_WIDGET_TYPES):
 
-				legalName = label.replace('/','_')
+			if widgettype in (ACTIVE_WIDGET_TYPES + PASSIVE_WIDGET_TYPES):
+
+				address = legal_chan_name(item['address'])
+
+				polyphony = self.basecontrol.par.Polyphony.eval()
+				name = address.split('/')[-1]
+				if name.lower() in ["gate", "gain", "note", "freq"] and polyphony:
+					# Skip these parameters when Polyphony is enabled.
+					return
+
+				widget = self._create_widget(item)
+			else:
+				widget = Widget(widgettype, label, None, [])
+
+			new_widget_ui = self._add_widget_ui(widget, i, container, children_items)
+
+		elif widgettype == 'soundfile':
+			pass
+		else:
+			raise ValueError('Unexpected widget type: ' + widgettype)
+
+		if children_items:
+
+			legalName = label.replace('/','_')
+			legalName = tdu.legalName(legalName)
+
+			container = container.create(containerCOMP, legalName)
+			container.viewer = True
+			container.par.hmode = 'fill'
+			container.par.vmode = 'fill'
+
+			if widgettype == 'hgroup':
+				container.par.align = 'horizlr'
+			elif widgettype == 'vgroup':
+				container.par.align = 'verttb'
+			elif widgettype == 'tgroup':
+				# todo: make this different
+				container.par.align = 'horizlr'
+
+		for j, group in enumerate(children_items):
+
+			if container is not None and group['type'] in CONTAINER_WIDGET_TYPES:
+				# create a new container for the group
+				legalName = group['label'].replace('/','_')
 				legalName = tdu.legalName(legalName)
+				newContainer = container.create(containerCOMP, legalName)
+				newContainer.nodeX = j*250
+				newContainer.viewer = True
+				newContainer.par.hmode = 'fill'
+				newContainer.par.vmode = 'fill'
+				newContainer.par.align = 'verttb'
+				newContainer.par.alignorder = j
 
-				container = container.create(containerCOMP, legalName)
-				container.viewer = True
-				container.par.hmode = 'fill'
-				container.par.vmode = 'fill'
-
-				if widgettype == 'hgroup':
-					container.par.align = 'horizlr'
-				elif widgettype == 'vgroup':
-					container.par.align = 'verttb'
-				elif widgettype == 'tgroup':
-					# todo: make this different
-					container.par.align = 'horizlr'
-
-			for j, group in enumerate(children_items):
-			
-				if container is not None and group['type'] not in ACTIVE_WIDGET_TYPES:
-					# create a new container for the group
-					legalName = group['label'].replace('/','_')
-					legalName = tdu.legalName(legalName)
-					newContainer = container.create(containerCOMP, legalName)
-					newContainer.nodeX = j*250
-					newContainer.viewer = True
-					newContainer.par.hmode = 'fill'
-					newContainer.par.vmode = 'fill'
-					newContainer.par.align = 'verttb'
-					newContainer.par.alignorder = j
-				else:
-					newContainer = container
-			
-				# recursively add UI
-				self._add_ui(group, j, newContainer)
+				if widgettype == 'tgroup':
+					newContainer.par.display.mode = ParMode.EXPRESSION
+					newContainer.par.display.expr = f'op("{new_widget_ui.path}").par.Value0 == me.par.alignorder'
+			else:
+				newContainer = container
+		
+			# recursively add UI
+			self._add_ui(group, j, newContainer)
