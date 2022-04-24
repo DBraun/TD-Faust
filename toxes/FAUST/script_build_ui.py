@@ -16,6 +16,9 @@ class Widget(NamedTuple):
     address: str
     par: td.Par = None
     meta: List = []
+    min: float = 0
+    max: float = 0
+    step: float = 0
 
 
 def legal_chan_name(name: str):
@@ -118,7 +121,7 @@ class FaustUIBuilder:
 			self._add_ui(item, 0, uic)
 
 		for widget in self.widgets.values():
-			if widget.par:
+			if widget.par is not None:
 				dat.appendRow([widget.par.name, widget.address])
 
 	def _create_widget(self, item):
@@ -158,7 +161,11 @@ class FaustUIBuilder:
 				par = [None]
 
 			meta = item['meta'] if 'meta' in item else []
-			self.widgets[address] = Widget(item['type'], address, par[0], meta)
+			self.widgets[address] = Widget(item['type'], address, par[0], meta,
+				item['min'] if 'min' in item else 0,
+				item['max'] if 'max' in item else 0,
+				item['step'] if 'step' in item else 0
+				)
 
 		return self.widgets[address]
 
@@ -250,7 +257,7 @@ class FaustUIBuilder:
 
 		if widgettype in PASSIVE_WIDGET_TYPES:
 			new_widget.par.Value0.mode = ParMode.EXPRESSION
-			new_widget.par.Value0.expr = f'op("{self.basecontrol.path}").op("./info1")["bargraph_{name}"]'
+			new_widget.par.Value0.expr = f'tdu.remap(  op("{self.basecontrol.path}").op("./info1")["bargraph_{name}"]  , {widget.min}, {widget.max}, 0, 1)'
 		elif widgettype in ACTIVE_WIDGET_TYPES:
 			# add binding to the widget
 			new_widget.par.Value0.mode = ParMode.BIND
