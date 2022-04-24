@@ -8,7 +8,7 @@ import td
 
 # active widget types are ones which will need custom parameters on a Base COMP.
 ACTIVE_WIDGET_TYPES = ['button', 'checkbox', 'nentry', 'hslider', 'vslider']
-
+PASSIVE_WIDGET_TYPES = ['hbargraph', 'vbargraph']
 
 class Widget(NamedTuple):
     type: str
@@ -116,7 +116,8 @@ class FaustUIBuilder:
 			self._add_ui(item, 0, uic)
 
 		for widget in self.widgets.values():
-			dat.appendRow([widget.par.name, widget.address])
+			if widget.par:
+				dat.appendRow([widget.par.name, widget.address])
 
 	def _add_ui(self, item, i: int, container: td.COMP):
 
@@ -127,7 +128,7 @@ class FaustUIBuilder:
 		label = item['label']
 			
 		# is the item something that corresponds to a td.Par?
-		if widgettype in ACTIVE_WIDGET_TYPES:
+		if widgettype in (ACTIVE_WIDGET_TYPES + PASSIVE_WIDGET_TYPES):
 
 			address = legal_chan_name(item['address'])
 
@@ -160,6 +161,10 @@ class FaustUIBuilder:
 						par = self.page.appendMenu(parname, label=label)
 						setup_par_menu(par[0], item)
 
+					elif widgettype in PASSIVE_WIDGET_TYPES:
+
+						par = [None]
+
 					self.widgets[address] = widget = Widget(item['type'], address, par[0])
 				
 				# add the widget to the UI container.
@@ -173,6 +178,10 @@ class FaustUIBuilder:
 					widget_source = FAUST_WIDGETS.op('./masterCheckbox')
 				elif widgettype == 'nentry':
 					widget_source = FAUST_WIDGETS.op('./masterDropMenu')
+				elif widgettype == 'hbargraph':
+					widget_source = FAUST_WIDGETS.op('./masterBarGraph')
+				elif widgettype == 'vbargraph':
+					widget_source = FAUST_WIDGETS.op('./masterBarGraph')
 				else:
 					raise ValueError(f'Unexpected widget type: {widget_source}')
 					
@@ -189,11 +198,13 @@ class FaustUIBuilder:
 						tooltip = re.sub("\s+"," ", tooltip)
 						widget.par.help = tooltip
 
-				if container is not None and widgettype != 'soundfile':
+				if container is not None:
 
 					widget = self.widgets[address]
 
-					new_widget = container.copy(widget_source, name=widget.par.name, includeDocked=True)
+					name = widget.par.name if widget.par else label.split('/')[-1].replace('/','_')
+
+					new_widget = container.copy(widget_source, name=name, includeDocked=True)
 					
 					new_widget.nodeX = i*250
 					
@@ -211,11 +222,23 @@ class FaustUIBuilder:
 					elif widgettype == 'nentry':
 						new_widget.par.Menunames = " ".join(["'{0}'".format(a) for a in widget.par.menuNames])
 						new_widget.par.Menulabels = " ".join(["'{0}'".format(a) for a in widget.par.menuLabels])
-					
-					# add binding to the widget
-					new_widget.par.Value0.mode = ParMode.BIND
-					new_widget.par.Value0.bindExpr = f'op("{self.basecontrol.path}").par.{widget.par.name}'
-					new_widget.par.Value0.bindRange = True
+					elif widgettype == 'hbargraph':
+						new_widget.par.Sliderorient = 'horz'
+					elif widgettype == 'vbargraph':
+						new_widget.par.Sliderorient = 'vert'
+					else:
+						raise ValueError(f'Unexpected widget type: {widgettype}')
+
+					if widgettype in PASSIVE_WIDGET_TYPES:
+						new_widget.par.Value0.mode = ParMode.EXPRESSION
+						new_widget.par.Value0.expr = f'op("{self.basecontrol.path}").op("info1")["bargraph_{name}"]'
+					elif widgettype in ACTIVE_WIDGET_TYPES:
+						# add binding to the widget
+						new_widget.par.Value0.mode = ParMode.BIND
+						new_widget.par.Value0.bindExpr = f'op("{self.basecontrol.path}").par.{widget.par.name}'
+						new_widget.par.Value0.bindRange = True
+					else:
+						raise ValueError(f'Unexpected widget type: {widgettype}')
 
 		elif widgettype == 'soundfile':
 			pass
