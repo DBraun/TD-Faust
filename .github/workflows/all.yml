@@ -1,8 +1,9 @@
 name: Compile
 on:
+  pull_request: {}
   push:
-    tags:
-    - '*'
+    branches:
+      - main
 jobs:
 
   build-windows:
