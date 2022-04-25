@@ -220,6 +220,7 @@ class FaustUIBuilder:
 		new_widget = container.copy(widget_source, name=name, includeDocked=True)
 		
 		new_widget.nodeX = i*250
+		new_widget.nodeY =  -500
 		
 		# add label to the widget
 		if widgettype in ['hslider', 'vslider']:
@@ -251,7 +252,8 @@ class FaustUIBuilder:
 			if container == self.uic and self.basecontrol.par.Polyphony.eval():
 				new_widget.par.Radiolabels = "Instrument Effect"
 			else:
-				new_widget.par.Radiolabels = " ".join([f'"{child["label"]}"' for child in children_items])
+				child_labels = [child['label'] for child in children_items]
+				new_widget.par.Radiolabels = " ".join([f'"{label}"' for label in child_labels])
 		else:
 			raise ValueError(f'Unexpected widget type: {widgettype}')
 
@@ -269,7 +271,6 @@ class FaustUIBuilder:
 			raise ValueError(f'Unexpected widget type: {widgettype}')
 
 		return new_widget
-
 
 	def _add_ui(self, item, i: int, container: td.COMP):
 
@@ -312,6 +313,8 @@ class FaustUIBuilder:
 			legalName = tdu.legalName(legalName)
 
 			container = container.create(containerCOMP, legalName)
+			container.nodeX = 0
+			container.nodeY = 250
 			container.viewer = True
 			container.par.hmode = 'fill'
 			container.par.vmode = 'fill'
@@ -332,6 +335,7 @@ class FaustUIBuilder:
 				legalName = tdu.legalName(legalName)
 				newContainer = container.create(containerCOMP, legalName)
 				newContainer.nodeX = j*250
+				newContainer.nodeY =   0
 				newContainer.viewer = True
 				newContainer.par.hmode = 'fill'
 				newContainer.par.vmode = 'fill'
