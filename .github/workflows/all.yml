@@ -143,15 +143,15 @@ jobs:
             llvm-options: >-
               -DLLVM_TARGETS_TO_BUILD="X86"
               -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-linux-gnu"
-          - name: ubuntu-aarch64
-            theContainer: quay.io/pypa/manylinux_2_24_aarch64
-            os: ubuntu-latest
-            cmake-options: >-
-              -DCMAKE_BUILD_TYPE=Release
-              -DCMAKE_VERBOSE_MAKEFILE=ON
-            llvm-options: >-
-              -DLLVM_TARGETS_TO_BUILD="AArch64"
-              -DLLVM_DEFAULT_TARGET_TRIPLE="aarch64-linux-gnu"
+          # - name: ubuntu-aarch64
+          #   theContainer: quay.io/pypa/manylinux_2_24_aarch64
+          #   os: ubuntu-latest
+          #   cmake-options: >-
+          #     -DCMAKE_BUILD_TYPE=Release
+          #     -DCMAKE_VERBOSE_MAKEFILE=ON
+          #   llvm-options: >-
+          #     -DLLVM_TARGETS_TO_BUILD="AArch64"
+          #     -DLLVM_DEFAULT_TARGET_TRIPLE="aarch64-linux-gnu"
     runs-on: ubuntu-latest
     container: ${{matrix.theContainer}}
     steps:
