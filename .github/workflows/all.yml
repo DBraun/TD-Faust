@@ -174,7 +174,7 @@ jobs:
       run: |
         cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
         cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
-        cmake --build . --config Release
+        cmake --build build --config Release
     - name: Make distribution
       run: |
         mkdir TD-Faust_dist
