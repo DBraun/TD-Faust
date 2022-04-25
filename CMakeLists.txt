@@ -42,7 +42,10 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 ################################################################################
 # Sub-projects
 ################################################################################
+
 project(TD-Faust VERSION 0.0.1)
+
+if(APPLE OR MSVC)
 
 set(TOUCHDESIGNER_INC ${PROJECT_SOURCE_DIR}/thirdparty/TouchDesigner/)
 
@@ -81,7 +84,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     # MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/Info.plist
     )
 
-if (!WIN32)	
+if (!WIN32) 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -stdlib=libc++")
 endif()
 
@@ -111,8 +114,16 @@ if(WIN32)
   target_link_libraries(${PROJECT_NAME} ws2_32)
   # windows multimedia for rt midi
   target_link_libraries(${PROJECT_NAME} winmm)
-else()
+elseif(APPLE)
   target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
+endif()
+
+else()
+## pretend we're building on Linux
+add_library(TD-Faust MODULE "${PROJECT_SOURCE_DIR}/TD-Faust/null.cpp")
+add_dependencies(${PROJECT_NAME} dynamiclib)
+target_link_libraries(${PROJECT_NAME} dynamiclib)
+
 endif()
 
 if(MSVC)

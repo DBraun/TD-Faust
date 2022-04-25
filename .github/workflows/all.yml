@@ -179,6 +179,7 @@ jobs:
       run: |
         mkdir TD-Faust_dist
         cp -v -r ${{ github.workspace }}/thirdparty/faust/build/lib/Release TD-Faust_dist
+        cp -v -r ${{ github.workspace }}/Plugins TD-Faust_dist
         zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
 
     - name: Upload artifact
