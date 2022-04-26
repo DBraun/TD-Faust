@@ -67,128 +67,31 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 * Faust Libraries Path: The directory containing your custom faust libraries (`.lib` files)
 * Assets Path: The directory containing your assets such as `.wav` files.
 * Compile: Compile the Faust code.
-* Setup UI: See below.
 * Reset: Clear the compiled code, if there is any.
 * Clear MIDI: Clear the MIDI notes (in case something went wrong).
-* Viewer COMP: The [Container COMP](https://docs.derivative.ca/Container_COMP) which will be used when `Setup UI` is pulsed.
+* Viewer COMP: The [Container COMP](https://docs.derivative.ca/Container_COMP) which will be used when `Compile` is pulsed.
 
-### Setup UI
+### Automatic Custom Parameters and UI
 
-One great feature of TD-Faust is that user interfaces that appear in the Faust code can become [Custom Parameters](https://docs.derivative.ca/Custom_Parameters) by pressing the "Setup UI" button. Take a look at the simple Faust code below:
+One great feature of TD-Faust is that user interfaces that appear in the Faust code become [Custom Parameters](https://docs.derivative.ca/Custom_Parameters) on the Faust Base. If a Viewer COMP is set, then it can be automatically filled in widgets with [binding](https://docs.derivative.ca/Binding). Look at the simple Faust code below:
 
 ```faust
 import("stdfaust.lib");
-volume = hslider("Volume", 1., 0., 1., ma.EPSILON);
+volume = hslider("Volume", 1., 0., 1., 0);
 process = os.osc(440.)*volume <: _, _;
 ```
 
-After compiling this code, press the `Setup UI` button to build a UI in the `Viewer COMP`. The Faust base will create a secondary page of custom parameters titled "Control", and because of the code we've written there will be one custom Float parameter named "Volume". Setting up the UI like this works by saving an XML file inside a directory called `dsp_output`. It will also print out information inside the TouchDesigner Console, which can be accesssed from the [Dialogs menu](https://docs.derivative.ca/Dialog). In a *non-polyphonic example*, this is an example of the important printout section:
-
-<details>
-<summary>non-polyphonic example</summary>
-<pre>
-<code>
----------------- DUMPING [Faust] PARAMETERS ---------------
-/Pitch_Shifter/shift_semitones : 3
-/Pitch_Shifter/window_samples : 3
-/Pitch_Shifter/xfade_samples : 3
-Number of Inputs: 2
-Number of Outputs: 2
-</code>
-</pre>
-</details>
-
-This means that you can pass a CHOP containing those three parameter names to the second input of the Faust CHOP. You can even make this CHOP have the same sample rate as the Faust CHOP in order to have no-latency control of the parameters.
-
-In a *polyphonic* example with `Group Voices` enabled, this is an example of the important printout section:
-
-<details>
-<summary>polyphonic example</summary>
-<pre>
-<code>
----------------- DUMPING [Faust] PARAMETERS ---------------
-/Sequencer/DSP1/Polyphonic/Voices/Panic : 0
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/cutoff : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/cutoff_modulation : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env0/A : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env0/D : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env0/R : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env0/S : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env1/A : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env1/D : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env1/R : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env1/S : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/freq : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/gate : 0
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/note_offset : 3
-Number of Inputs: 0
-Number of Outputs: 2
-</code>
-</pre>
-</details>
-
-Like the non-polyphonic example above, this indicates that you can control the `cutoff`, `cutoff_modulation`, and other parameters with a wired input CHOP with the correct channel names. Importantly, the same values will change all the voices simultaneously.
-
-If `Group Voices` is disabled, the printout will look like this:
-
-<details>
-<summary>grouped-voices polyphonic example</summary>
-<pre>
-<code>
----------------- DUMPING [Faust] PARAMETERS ---------------
-/Sequencer/DSP1/Polyphonic/Voices/Panic : 0
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/cutoff : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/cutoff_modulation : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env0/A : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env0/D : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env0/R : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env0/S : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env1/A : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env1/D : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env1/R : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/env1/S : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/freq : 3
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/gate : 0
-/Sequencer/DSP1/Polyphonic/Voices/MyInstrument/note_offset : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/cutoff : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/cutoff_modulation : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/env0/A : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/env0/D : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/env0/R : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/env0/S : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/env1/A : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/env1/D : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/env1/R : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/env1/S : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/freq : 3
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/gate : 0
-/Sequencer/DSP1/Polyphonic/Voice1/MyInstrument/note_offset : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/cutoff : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/cutoff_modulation : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/env0/A : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/env0/D : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/env0/R : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/env0/S : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/env1/A : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/env1/D : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/env1/R : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/env1/S : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/freq : 3
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/gate : 0
-/Sequencer/DSP1/Polyphonic/Voice2/MyInstrument/note_offset : 3
-Number of Inputs: 0
-Number of Outputs: 2
-</code>
-</pre>
-</details>
-
-Note how there is a set of parameters for each voice. All parameters can be addressed individually with the input CHOP.
+If you compile this with a Faust Base, the Base will create a secondary page of custom parameters titled "Control". Because of the code we've written there will be one custom Float parameter named "Volume". In order to automatically create a UI, pressing compile will save a JSON file inside a directory called `dsp_output`.
 
 ### Group Voices and Dynamic Voices
 
-The `Group Voices` and `Dynamic Voices` toggles matter when using [polyphony](https://faustdoc.grame.fr/manual/midi/). You should also read the `Setup UI` section above.
+The `Group Voices` and `Dynamic Voices` toggles matter when using [polyphony](https://faustdoc.grame.fr/manual/midi/).
 
 If you enable `Group Voices`, one set of parameters will control all voices at once. Otherwise, you will need to address a set of parameters for each voice.
+
+If `Group Voices` is disabled, the printout will look like this:
+
+Note how there is a set of parameters for each voice. All parameters can be addressed individually with the input CHOP.
 
 If you enable `Dynamic Voices`, then voices whose notes have been released will be dynamically turned off in order to save computation. Dynamic Voices should be on in most cases such as when you're wiring a MIDI buffer as the third input to the Faust CHOP. There is a special case in which you might want `Dynamic Voices` off:
 * You are not wiring a MIDI buffer as the third input.
@@ -201,15 +104,15 @@ The sample rate is typically a high number such as 44100 Hz, and the control rat
 
 ```faust
 import("stdfaust.lib");
-volume = hslider("Volume", 1., 0., 1., ma.EPSILON);
+volume = hslider("Volume", 1., 0., 1., 0);
 process = os.osc(440.)*volume <: _, _;
 ```
 
-In TouchDesigner, we can press "Setup UI" to get a "Volume" custom parameter on the "Control" page of the Faust base. You can look inside the base to see how the custom parameter is wired into the Faust CHOP. By default, this "Volume" signal will only be the project cook rate (60 Hz). Therefore, as you change the volume, you will hear artifacts in the output. There are two solutions:
+In TouchDesigner, we can press "Compile" to get a "Volume" custom parameter on the "Control" page of the Faust base. You can look inside the base to see how the custom parameter is wired into the Faust CHOP. By default, this "Volume" signal will only be the project cook rate (60 Hz). Therefore, as you change the volume, you will hear artifacts in the output. There are two solutions:
 
-1. Use [si.smoo](https://faustlibraries.grame.fr/libs/signals/#sismoo) or [si.smooth](https://faustlibraries.grame.fr/libs/signals/#sismooth) to smooth the control signal: `volume = hslider("Volume", 1., 0., 1., ma.EPSILON) : si.smoo;`
+1. Use [si.smoo](https://faustlibraries.grame.fr/libs/signals/#sismoo) or [si.smooth](https://faustlibraries.grame.fr/libs/signals/#sismooth) to smooth the control signal: `volume = hslider("Volume", 1., 0., 1., 0) : si.smoo;`
 
-2. Create a higher sample-rate control signal, possibly as high as the Faust CHOP, and connect it to the Faust base.
+2. Create a higher sample-rate control signal, possibly as high as the Faust CHOP, and connect it as the second input to the Faust base.
 
 ### Using TD-Faust in New Projects
 
