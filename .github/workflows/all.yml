@@ -162,8 +162,8 @@ jobs:
 
     - name: Setup
       run: |
-        sudo apt-get update -yq \
-        && sudo apt-get install -yq --no-install-recommends libncurses5-dev
+        apt-get update -yq \
+        && apt-get install -yq --no-install-recommends libncurses5-dev
 
     - name: Build libsndfile
       # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
