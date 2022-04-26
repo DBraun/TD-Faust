@@ -162,7 +162,7 @@ jobs:
 
     - name: Setup
       run: |
-        yum install ncurses-devel zip
+        yum -y install ncurses-devel zip
 
     - name: Build libsndfile
       # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
