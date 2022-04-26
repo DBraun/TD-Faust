@@ -135,7 +135,7 @@ jobs:
       matrix:
         include:
           - name: ubuntu-x86_64
-            theContainer: quay.io/pypa/manylinux_2_24_x86_64
+            theContainer: quay.io/pypa/manylinux2014_x86_64
             os: ubuntu-latest
             cmake-options: >-
               -DCMAKE_BUILD_TYPE=Release
@@ -144,7 +144,7 @@ jobs:
               -DLLVM_TARGETS_TO_BUILD="X86"
               -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-linux-gnu"
           # - name: ubuntu-aarch64
-          #   theContainer: quay.io/pypa/manylinux_2_24_aarch64
+          #   theContainer: quay.io/pypa/manylinux2014_aarch64
           #   os: ubuntu-latest
           #   cmake-options: >-
           #     -DCMAKE_BUILD_TYPE=Release
