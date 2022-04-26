@@ -6,129 +6,129 @@ on:
       - main
 jobs:
 
-  build-windows:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        os: [windows-latest]
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
+  # build-windows:
+  #   runs-on: windows-latest
+  #   strategy:
+  #     matrix:
+  #       os: [windows-latest]
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #     with:
+  #       submodules: true
 
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.3
+  #   - name: Add msbuild to PATH
+  #     uses: microsoft/setup-msbuild@v1.0.3
 
-    - name: Get CMake
-      uses: lukka/get-cmake@latest
+  #   - name: Get CMake
+  #     uses: lukka/get-cmake@latest
 
-    - name: Download libsndfile
-      run: |
-        cd thirdparty
-        curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.0.31/libsndfile-1.0.31-win64.zip
-        tar -xf libsndfile-1.0.31-win64.zip
-        ls -r ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/*
+  #   - name: Download libsndfile
+  #     run: |
+  #       cd thirdparty
+  #       curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.0.31/libsndfile-1.0.31-win64.zip
+  #       tar -xf libsndfile-1.0.31-win64.zip
+  #       ls -r ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/*
 
-    - name: Build LLVM
-      run: |
-        cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64 -DLLVM_ENABLE_ZLIB=off
-        msbuild build/LLVM.sln /property:Configuration=Release
+  #   - name: Build LLVM
+  #     run: |
+  #       cd thirdparty/llvm-project/llvm
+  #       cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64 -DLLVM_ENABLE_ZLIB=off
+  #       msbuild build/LLVM.sln /property:Configuration=Release
     
-    - name: Build TD-Faust (Release)
-      run: |
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/cmake
-        msbuild build/TD-Faust.sln /property:Configuration=Release
-      env:
-        LLVM_DIR: ${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm
+  #   - name: Build TD-Faust (Release)
+  #     run: |
+  #       cmake -Bbuild -DUSE_LLVM_CONFIG=off -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/cmake
+  #       msbuild build/TD-Faust.sln /property:Configuration=Release
+  #     env:
+  #       LLVM_DIR: ${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm
 
-    - name: Make distribution
-      run: |
-        mkdir TD-Faust_dist
-        move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
-        move ${{ github.workspace }}/Plugins/faust.dll TD-Faust_dist
-        cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/bin/sndfile.dll TD-Faust_dist
-        cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
-        Remove-Item -Recurse -Force "TD-Faust_dist/faustlibraries/.git"
-        tar.exe -c -f TD-Faust-${{ matrix.os }}.zip TD-Faust_dist
+  #   - name: Make distribution
+  #     run: |
+  #       mkdir TD-Faust_dist
+  #       move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
+  #       move ${{ github.workspace }}/Plugins/faust.dll TD-Faust_dist
+  #       cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/bin/sndfile.dll TD-Faust_dist
+  #       cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
+  #       Remove-Item -Recurse -Force "TD-Faust_dist/faustlibraries/.git"
+  #       tar.exe -c -f TD-Faust-${{ matrix.os }}.zip TD-Faust_dist
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: my-artifact-${{ matrix.os }}
-        path: TD-Faust-${{ matrix.os }}.zip
+  #   - name: Upload artifact
+  #     uses: actions/upload-artifact@v2
+  #     with:
+  #       name: my-artifact-${{ matrix.os }}
+  #       path: TD-Faust-${{ matrix.os }}.zip
 
-  build-macos:
-    strategy:
-      matrix:
-        include:
-          - name: macos-x86_64
-            os: macos-latest
-            cmake-options: >-
-              -DCMAKE_BUILD_TYPE=Release
-              -DCMAKE_VERBOSE_MAKEFILE=ON
-              -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
-              -DCMAKE_OSX_ARCHITECTURES="x86_64"
-            llvm-options: >-
-              -DLLVM_TARGETS_TO_BUILD="X86"
-              -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-apple-darwin19.6.0"
-          # # todo: we can't build arm64 LLVM yet on GitHub
-          # #       because the compiling procedure involves
-          # #       running what we compile?
-          # #       /bin/sh: ../../../bin/llvm-tblgen: Bad CPU type in executable
-          # - name: macos-arm64
-          #   os: macos-latest
-          #   cmake-options: >-
-          #     -DCMAKE_BUILD_TYPE=Release
-          #     -DCMAKE_VERBOSE_MAKEFILE=ON
-          #     -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
-          #     -DCMAKE_OSX_ARCHITECTURES="arm64"
-          #   llvm-options: >-
-          #     -DLLVM_TARGETS_TO_BUILD="AArch64"
-          #     -DLLVM_DEFAULT_TARGET_TRIPLE="arm64-apple-darwin19.6.0"
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
+  # build-macos:
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - name: macos-x86_64
+  #           os: macos-latest
+  #           cmake-options: >-
+  #             -DCMAKE_BUILD_TYPE=Release
+  #             -DCMAKE_VERBOSE_MAKEFILE=ON
+  #             -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
+  #             -DCMAKE_OSX_ARCHITECTURES="x86_64"
+  #           llvm-options: >-
+  #             -DLLVM_TARGETS_TO_BUILD="X86"
+  #             -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-apple-darwin19.6.0"
+  #         # # todo: we can't build arm64 LLVM yet on GitHub
+  #         # #       because the compiling procedure involves
+  #         # #       running what we compile?
+  #         # #       /bin/sh: ../../../bin/llvm-tblgen: Bad CPU type in executable
+  #         # - name: macos-arm64
+  #         #   os: macos-latest
+  #         #   cmake-options: >-
+  #         #     -DCMAKE_BUILD_TYPE=Release
+  #         #     -DCMAKE_VERBOSE_MAKEFILE=ON
+  #         #     -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
+  #         #     -DCMAKE_OSX_ARCHITECTURES="arm64"
+  #         #   llvm-options: >-
+  #         #     -DLLVM_TARGETS_TO_BUILD="AArch64"
+  #         #     -DLLVM_DEFAULT_TARGET_TRIPLE="arm64-apple-darwin19.6.0"
+  #   runs-on: macos-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #     with:
+  #       submodules: true
 
-    - name: Build libsndfile
-      # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
-      run: |
-        cd thirdparty/libsndfile
-        mkdir build && cd build
-        cmake .. -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
-        cmake --build . --config Release
+  #   - name: Build libsndfile
+  #     # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
+  #     run: |
+  #       cd thirdparty/libsndfile
+  #       mkdir build && cd build
+  #       cmake .. -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
+  #       cmake --build . --config Release
 
-    - name: Build LLVM
-      run: |
-        cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off
-        cmake --build build
+  #   - name: Build LLVM
+  #     run: |
+  #       cd thirdparty/llvm-project/llvm
+  #       cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off
+  #       cmake --build build
     
-    - name: Use CMake for TD-Faust
-      run: |
-        cmake -Bbuild -G "Xcode" ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
-        cmake -Bbuild -G "Xcode" ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
-    - name: Build TD-Faust (Release)
-      run: |
-        xcodebuild -configuration Release -project build/TD-Faust.xcodeproj
-        install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib Release/TD-Faust.plugin/Contents/MacOS/TD-Faust
+  #   - name: Use CMake for TD-Faust
+  #     run: |
+  #       cmake -Bbuild -G "Xcode" ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
+  #       cmake -Bbuild -G "Xcode" ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
+  #   - name: Build TD-Faust (Release)
+  #     run: |
+  #       xcodebuild -configuration Release -project build/TD-Faust.xcodeproj
+  #       install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib Release/TD-Faust.plugin/Contents/MacOS/TD-Faust
 
-    - name: Make distribution
-      run: |
-        mkdir TD-Faust_dist
-        cp ${{ github.workspace }}/thirdparty/faust/build/lib/Release/libfaust.2.dylib TD-Faust_dist
-        mv ${{ github.workspace }}/Release/TD-Faust.plugin TD-Faust_dist
-        cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
-        rm -rf TD-Faust_dist/faustlibraries/.git
-        zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
+  #   - name: Make distribution
+  #     run: |
+  #       mkdir TD-Faust_dist
+  #       cp ${{ github.workspace }}/thirdparty/faust/build/lib/Release/libfaust.2.dylib TD-Faust_dist
+  #       mv ${{ github.workspace }}/Release/TD-Faust.plugin TD-Faust_dist
+  #       cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
+  #       rm -rf TD-Faust_dist/faustlibraries/.git
+  #       zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: my-artifact-${{ matrix.name }}
-        path: TD-Faust-${{ matrix.name }}.zip
+  #   - name: Upload artifact
+  #     uses: actions/upload-artifact@v2
+  #     with:
+  #       name: my-artifact-${{ matrix.name }}
+  #       path: TD-Faust-${{ matrix.name }}.zip
 
   build-ubuntu:
     strategy:
@@ -160,6 +160,11 @@ jobs:
       with:
         submodules: true
 
+    - name: Setup
+      run: |
+        sudo apt-get update -yq \
+        && sudo apt-get install -yq --no-install-recommends libncurses5-dev
+
     - name: Build libsndfile
       # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
       run: |
@@ -182,7 +187,7 @@ jobs:
     - name: Make distribution
       run: |
         mkdir TD-Faust_dist
-        cp -v -r ${{ github.workspace }}/thirdparty/faust/build/lib TD-Faust_dist
+        cp -v -r thirdparty/faust/build/lib TD-Faust_dist
         zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
 
     - name: Upload artifact
