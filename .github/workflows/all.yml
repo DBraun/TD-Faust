@@ -135,7 +135,7 @@ jobs:
       matrix:
         include:
           - name: ubuntu-x86_64
-            theContainer: quay.io/pypa/manylinux2010_x86_64
+            theContainer: quay.io/pypa/manylinux2014_x86_64
             os: ubuntu-latest
             cmake-options: >-
               -DCMAKE_BUILD_TYPE=Release
@@ -144,7 +144,7 @@ jobs:
               -DLLVM_TARGETS_TO_BUILD="X86"
               -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-linux-gnu"
           # - name: ubuntu-aarch64
-          #   theContainer: quay.io/pypa/manylinux2010_aarch64
+          #   theContainer: quay.io/pypa/manylinux2014_aarch64
           #   os: ubuntu-latest
           #   cmake-options: >-
           #     -DCMAKE_BUILD_TYPE=Release
@@ -160,14 +160,9 @@ jobs:
       with:
         submodules: true
 
-    - name: Setup ncurses
+    - name: Setup
       run: |
-        wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.3.tar.gz
-        tar xvfz ncurses-6.3.tar.gz
-        cd ncurses-6.3
-        ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
-        make
-        make install
+        yum -y install ncurses-devel zip
 
     - name: Build libsndfile
       # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
