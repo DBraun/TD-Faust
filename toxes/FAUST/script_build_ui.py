@@ -62,7 +62,7 @@ def setup_par_menu(par: td.Par, item):
 
 class FaustUIBuilder:
 
-	def legal_parname(self, name: str):
+	def legal_parname(self, name: str) -> str:
 
 		"""
 		Make strings that can be used as custom parameters in TouchDesigner.
@@ -87,7 +87,7 @@ class FaustUIBuilder:
 
 		return parname
 
-	def build_ui(self, faust_json: str, basecontrol: td.COMP, uic: td.COMP):
+	def build_ui(self, faust_json: str, basecontrol: td.COMP, uic: td.COMP) -> None:
 
 		self.basecontrol = basecontrol  # Base COMP where the control parameters are
 		self.uic = uic  # UI container
@@ -124,11 +124,12 @@ class FaustUIBuilder:
 			if widget.par is not None:
 				dat.appendRow([widget.par.name, widget.address])
 
-	def _create_widget(self, item):
+	def _create_widget(self, item) -> Widget:
 
 		"""add the widget if it's not already in self.widgets. Then return it."""
-
-		address = legal_chan_name(item['address'])
+		address = item['address']
+		address = address.replace('/TD/','')
+		address = legal_chan_name(address)
 
 		label = item['label']
 		widgettype = item['type']
@@ -169,7 +170,7 @@ class FaustUIBuilder:
 
 		return self.widgets[address]
 
-	def _add_widget_ui(self, widget: Widget, i: int, container: td.COMP, children_items):
+	def _add_widget_ui(self, widget: Widget, i: int, container: td.COMP, children_items) -> td.COMP:
 
 		if container is None:
 			return None
@@ -202,44 +203,48 @@ class FaustUIBuilder:
 			widget_source = FAUST_WIDGETS.op('./masterRadio')
 		else:
 			raise ValueError(f'Unexpected widget type: {widget_source}')
-			
+
 		# Look for meta tags such as [style:knob]
 		is_knob = False
 		for meta in widget.meta:
 			if 'style' in meta:
-				if meta['style'] == 'knob':
+				style = meta['style']
+				if style == 'knob':
 					widget_source = FAUST_WIDGETS.op('./masterKnob')
 					is_knob = True
+
 			if 'tooltip' in meta:
 				tooltip = meta['tooltip']
 				# remove double white space in the tooltip
 				tooltip = re.sub("\s+"," ", tooltip)
 				widget.par.help = tooltip
-
+				# todo: add the tooltip to the new_widget
+			
 		name = widget.address.split('/')[-1]
 		new_widget = container.copy(widget_source, name=name, includeDocked=True)
 		
-		new_widget.nodeX = i*250
-		new_widget.nodeY =  -500
+		new_widget.nodeX =   0
+		new_widget.nodeY =   250
 		
 		# add label to the widget
 		if widgettype in ['hslider', 'vslider']:
+			pass # see below after meta is fetched
+		elif widgettype == 'button':
+			new_widget.par.Buttonofflabel = new_widget.par.Buttononlabel = widget.par.label
+		elif widgettype == 'checkbox':
 			if is_knob:
 				new_widget.par.Knoblabel = widget.par.label
 			else:
 				new_widget.par.Sliderlabelnames = '"' + widget.par.label + '"'
-		elif widgettype == 'button':
-			new_widget.par.Buttonofflabel = new_widget.par.Buttononlabel = widget.par.label
-		elif widgettype == 'checkbox':
-			# todo: add a label to the checkbox somehow
-			pass
 		elif widgettype == 'nentry':
 			new_widget.par.Menunames = " ".join(["'{0}'".format(a) for a in widget.par.menuNames])
 			new_widget.par.Menulabels = " ".join(["'{0}'".format(a) for a in widget.par.menuLabels])
 		elif widgettype == 'hbargraph':
 			new_widget.par.Sliderorient = 'horz'
+			new_widget.par.Sliderlabelnames = widget.address
 		elif widgettype == 'vbargraph':
 			new_widget.par.Sliderorient = 'vert'
+			new_widget.par.Sliderlabelnames = widget.address
 		elif widgettype in ['hgroup', 'vgroup']:
 			if widget.address == 'DSP1':
 				new_widget.par.Headerlabel = "Instrument"
@@ -270,9 +275,21 @@ class FaustUIBuilder:
 		else:
 			raise ValueError(f'Unexpected widget type: {widgettype}')
 
+		for meta in widget.meta:
+			if 'style' in meta:
+				style = meta['style']
+				if 'menu' in style and widgettype == 'nentry':
+					# style might be "menu{'Noise':0;'Sawtooth':1}"
+					# https://github.com/Fr0stbyteR/faust-ui/blob/5da18109241d9c0d44974c9afac402809a3c2995/src/components/Group.ts#L27
+					reg = re.compile("(?:(?:'|_)(.+?)(?:'|_):([-+]?[0-9]*\.?[0-9]+?))")
+					matches = reg.findall(style)
+					# matches == [('Noise', '0'), ('Sawtooth', '1'), ('Triangle', '2')]
+					new_widget.par.Menunames = " ".join([f"'{tdu.legalName(pair[0])}'" for pair in matches])
+					new_widget.par.Menulabels = " ".join([f"'{pair[0]}'" for pair in matches])
+
 		return new_widget
 
-	def _add_ui(self, item, i: int, container: td.COMP):
+	def _add_ui(self, item, i: int, container: td.COMP) -> None:
 
 		widgettype = item['type'] # hgroup, vgroup, tgroup, or other
 		
@@ -283,7 +300,6 @@ class FaustUIBuilder:
 
 		new_widget_ui = None
 
-		# is the item something that corresponds to a td.Par?
 		if widgettype in (ACTIVE_WIDGET_TYPES + PASSIVE_WIDGET_TYPES + CONTAINER_WIDGET_TYPES):
 
 			if widgettype in (ACTIVE_WIDGET_TYPES + PASSIVE_WIDGET_TYPES):
@@ -314,7 +330,7 @@ class FaustUIBuilder:
 
 			container = container.create(containerCOMP, legalName)
 			container.nodeX = 0
-			container.nodeY = 250
+			container.nodeY = 0
 			container.viewer = True
 			container.par.hmode = 'fill'
 			container.par.vmode = 'fill'
