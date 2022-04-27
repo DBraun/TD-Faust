@@ -160,9 +160,14 @@ jobs:
       with:
         submodules: true
 
-    - name: Setup
+    - name: ncurses install
       run: |
-        yum -y install ncurses-devel zip
+        wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.3.tar.gz
+        tar xvfz ncurses-6.3.tar.gz
+        cd ncurses-6.3
+        ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
+        make
+        make install
 
     - name: Build libsndfile
       # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
