@@ -162,6 +162,7 @@ jobs:
 
     - name: ncurses install
       run: |
+        yum install wget tar
         wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.3.tar.gz
         tar xvfz ncurses-6.3.tar.gz
         cd ncurses-6.3
