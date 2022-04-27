@@ -160,12 +160,15 @@ jobs:
       with:
         submodules: true
 
+    - name: Checkout ncurses
+      uses: actions/checkout@v2
+      with:
+        repository: mirror/ncurses
+        path: ncurses
+
     - name: ncurses install
       run: |
-        yum -y install wget tar
-        wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.3.tar.gz
-        tar xvfz ncurses-6.3.tar.gz
-        cd ncurses-6.3
+        cd ncurses
         ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
         make
         make install
