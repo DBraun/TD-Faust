@@ -156,44 +156,44 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - run: |
-          docker run --rm --privileged hypriot/qemu-register
-      - uses: docker://${{matrix.theContainer}}
-        with:
-          args: |
-              git clone git@github.com:mirror/ncurses.git ncurses
-              cd ncurses
-              ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
-              make
-              make install
-              cd ..
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - run: |
+        docker run --rm --privileged hypriot/qemu-register
+    - uses: docker://${{matrix.theContainer}}
+      with:
+        args: |
+            git clone git@github.com:mirror/ncurses.git ncurses
+            cd ncurses
+            ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
+            make
+            make install
+            cd ..
 
-              cd thirdparty/libsndfile
-              cmake -Bbuild -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
-              cmake --build build --config Release
-              cd ../..
+            cd thirdparty/libsndfile
+            cmake -Bbuild -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
+            cmake --build build --config Release
+            cd ../..
 
-              cd thirdparty/llvm-project/llvm
-              cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off -DLLVM_OPTIMIZED_TABLEGEN=ON
-              cmake --build build --config Release
-              cd ../../..
-      
-              cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
-              cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
-              cmake --build build --config Release
+            cd thirdparty/llvm-project/llvm
+            cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off -DLLVM_OPTIMIZED_TABLEGEN=ON
+            cmake --build build --config Release
+            cd ../../..
+    
+            cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
+            cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
+            cmake --build build --config Release
 
-              mkdir TD-Faust_dist
-              cp -v -r thirdparty/faust/build/lib TD-Faust_dist
-              zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
+            mkdir TD-Faust_dist
+            cp -v -r thirdparty/faust/build/lib TD-Faust_dist
+            zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: my-artifact-${{ matrix.name }}
-          path: TD-Faust-${{ matrix.name }}.zip
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: my-artifact-${{ matrix.name }}
+        path: TD-Faust-${{ matrix.name }}.zip
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
