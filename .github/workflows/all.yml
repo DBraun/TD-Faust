@@ -176,7 +176,7 @@ jobs:
         cd ncurses
         ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
         make
-        make install
+        sudo make install
     - name: Build libsndfile
       run: |
         cd thirdparty/libsndfile
