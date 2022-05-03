@@ -47,13 +47,7 @@ public:
         // The substitutions here must be consistent with the `legal_chan_name` method
         // in script_build_ui.py
 
-        std::string s(label);
-
-        // remove open and closed parentheses.
-        std::string safeLabel = std::regex_replace(s, std::regex("[\(\)]+"), "");
-
-        // replace spaces with a single underscore
-        safeLabel = std::regex_replace(safeLabel, std::regex("\\s+"), "_");
+        std::string safeLabel = cleanLabel(label);
 
         APIUI::addParameter(safeLabel.c_str(),
             zone, init, min, max, step, type
@@ -79,6 +73,14 @@ public:
         safeLabel = std::regex_replace(safeLabel, std::regex("\\s+"), "_");
 
         return safeLabel;
+    }
+
+    void setParamValue(const std::string& path, FAUSTFLOAT v)
+    {
+        // append "/TD/" if necessary
+        string p = path.length() > 0 && path[0] == '/' ? path : string("/TD/") + path;
+
+        APIUI::setParamValue(p.c_str(), v);
     }
 
     void

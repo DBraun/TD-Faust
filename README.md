@@ -77,11 +77,12 @@ One great feature of TD-Faust is that user interfaces that appear in the Faust c
 
 ```faust
 import("stdfaust.lib");
-volume = hslider("Volume", 1., 0., 1., 0);
-process = os.osc(440.)*volume <: _, _;
+freq = hslider("Freq", 440, 0, 20000, 0) : si.smoo;
+gain = hslider("Volume[unit:dB]", -12, -80, 20, 0) : si.smoo : ba.db2linear;
+process = freq : os.osc : _*gain <: si.bus(2);
 ```
 
-If you compile this with a Faust Base, the Base will create a secondary page of custom parameters titled "Control". Because of the code we've written there will be one custom Float parameter named "Volume". In order to automatically create a UI, pressing compile will save a JSON file inside a directory called `dsp_output`.
+If you compile this with a Faust Base, the Base will create a secondary page of custom parameters titled "Control". Because of the code we've written there will be two Float parameters named "Freq" and "Volume". In order to automatically create a UI, pressing compile will save a JSON file inside a directory called `dsp_output`.
 
 ### Group Voices and Dynamic Voices
 
@@ -116,15 +117,14 @@ In TouchDesigner, we can press "Compile" to get a "Volume" custom parameter on t
 
 ### Using TD-Faust in New Projects
 
-In this repository, copy the `toxes/FAUST` structure into your new project. You should have:
+From this repository, copy the `toxes/FAUST` structure into your new project. You should have:
 
 * `MyProject/MyProject.toe`
 * `MyProject/toxes/FAUST/FAUST.tox`
-* `MyProject/toxes/FAUST/main_faust_base.tox`
 
 and any other files which are sibling to FAUST.tox
 
-Now copy `FAUST.tox` into your new TouchDesigner project, probably near the root. `FAUST.tox` acts as a [Global OP Shortcut](https://docs.derivative.ca/Global_OP_Shortcut). Next, copy `main_faust_base.tox` into the project and use it in a way similar to how it's used in `TD-Faust.toe`.
+Now drag `FAUST.tox` into your new TouchDesigner project, probably near the root. `FAUST.tox` acts as a [Global OP Shortcut](https://docs.derivative.ca/Global_OP_Shortcut). Next, copy `toxes/FAUST/main_faust_base.tox` into the project and use it in a way similar to how it's used in `TD-Faust.toe`.
 
 ## Licenses / Thank You
 

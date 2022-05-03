@@ -397,6 +397,7 @@ FaustCHOP::eval(const string& code)
 	json_ui = new JSONUI(m_name_app, "", inputs, outputs, (int)m_srate, "", "", "", "", library_list, include_pathnames, -1, PathTableType(), MemoryLayoutType());
 	theDsp->buildUserInterface(json_ui);
 
+	std::filesystem::create_directory("./dsp_output");
 	ofstream myfile;
 	myfile.open("dsp_output/" + m_name_app + ".json");
 	myfile.seekp(0, ios::beg);
@@ -595,7 +596,7 @@ FaustCHOP::execute(CHOP_Output* output,
 
 			if (controlSample < controlInput->numSamples) {
 				for (chan = 0; chan < controlInput->numChannels; chan++) {
-					m_ui->setParamValue(controlInput->getChannelName(chan), controlInput->getChannelData(chan)[controlSample]);
+					m_ui->setParamValue(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[controlSample]);
 				}
 
 				// If polyphony is enabled and we're grouping voices,
