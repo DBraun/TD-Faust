@@ -1,264 +1,395 @@
 import math
 import re
-import xml.etree.ElementTree as ET
+import json
+from typing import NamedTuple, List
+from collections import deque
+
+# import TouchDesigner
+import td
+
+# input widget types are ones which will need custom parameters on a Base COMP.
+INPUT_WIDGET_TYPES = ['button', 'checkbox', 'nentry', 'hslider', 'vslider']
+OUTPUT_WIDGET_TYPES = ['hbargraph', 'vbargraph']
+GROUP_WIDGET_TYPES = ['hgroup', 'vgroup', 'tgroup']
 
 
-def legal_parname(name: str):
-
-	"""
-	Make strings that can be used as custom parameters in TouchDesigner.
-	See https://docs.derivative.ca/Custom_Parameters#Naming_Conventions
-	"""
-	name = re.sub(r"\W*", "", name, count=0, flags=0).replace('_', '')
-
-	firstChar = name[0].upper()
-
-	# If the first char is a digit, precede it by a capital P
-	firstChar = re.sub(r"\d", "P" + firstChar, firstChar)
-
-	name = firstChar + name.lower()[1:]
-
-	return name
+class Widget(NamedTuple):
+    type: str
+    address: str
+    par: td.Par = None
+    meta: List = []
+    min: float = 0
+    max: float = 0
+    step: float = 0
 
 
 def legal_chan_name(name: str):
+    # NB: The steps in this method must match the steps in the C++ FaustCHOPUI::addParameter
 
-	# NB: The steps in this method must match the steps in the C++ FaustCHOPUI::addParameter
+    # Remove parentheses.
+    # Note that this regex must be done exactly the same in C++ in the FaustCHOP_UI addParameter method.
 
-	# Remove parentheses.
-	# Note that this regex must be done exactly the same in C++ in the FaustCHOP_UI addParameter method.
+    name = re.sub(r"[\(\)]*", "", name)
 
-	name = re.sub(r"[\(\)]*", "", name)
+    # Replace groups of white space with a single underscore
+    name = re.sub(r"\s+", "_", name)
 
-	# Replace groups of white space with a single underscore
-	name = re.sub(r"\s+", "_", name)
-	
-	return name
+    # exception: this truncation does not need to occur on the C++ side.
+    if name.startswith("/TD/"):
+        name = name[4:]
 
-
-def text_to_num(text: str):
-
-	"""
-	Convert strings like "440.0f" to float numbers. Leave integers as ints.
-	"""
-
-	if text[-1] == 'f':
-		return float(text[:-1])
-	else:
-		return int(text)
+    return name
 
 
-def setup_par_float(par, widget):
+def setup_par_float(par: td.Par, item):
+    par.min = par.normMin = item['min']
+    par.max = par.normMax = item['max']
+    par.clampMin = par.clampMax = True
 
-	par.min = par.normMin = text_to_num(widget.find('min').text)
-	par.max = par.normMax = text_to_num(widget.find('max').text)
-	par.clampMin = par.clampMax = True
-	
-	par.default = par.val = text_to_num(widget.find('init').text)
+    par.default = par.val = item['init']
 
 
-def setup_par_menu(par, widget):
+def setup_par_menu(par: td.Par, item):
+    init = item['init']
+    theMin = item['min']
+    theMax = item['max']
+    step = item['step']
 
-	init = text_to_num(widget.find('init').text)
-	theMin = text_to_num(widget.find('min').text)
-	theMax = text_to_num(widget.find('max').text)
-	step = text_to_num(widget.find('step').text)
-	
-	numItems = math.floor((theMax-theMin)/step) + 1
-	
-	items = [min((theMin + step*i), theMax) for i in range(numItems)]
-	
-	par.menuNames = ['i' + str(i) for i in items]
-	par.menuLabels = [str(i) for i in items]
+    numItems = math.floor((theMax - theMin) / step) + 1
+
+    items = [min((theMin + step * i), theMax) for i in range(numItems)]
+
+    par.menuNames = ['i' + str(i) for i in items]
+    par.menuLabels = [str(i) for i in items]
 
 
 class FaustUIBuilder:
 
-	def build_ui(self, faust_xml: str, basecontrol, uic):
+    def legal_parname(self, name: str) -> str:
 
-		self.basecontrol = basecontrol  # Base COMP where the control parameters are
-		self.uic = uic  # UI container, but it may be None
+        """
+        Make strings that can be used as custom parameters in TouchDesigner.
+        See https://docs.derivative.ca/Custom_Parameters#Naming_Conventions
+        """
+        name = re.sub(r"\W*", "", name, count=0, flags=0).replace('_', '')
 
-		self.added_par_ids = set()
-		self.activewidgets = {}
-		self.passivewidgets = {}
+        firstChar = name[0].upper()
 
-		for customPage in self.basecontrol.customPages:
-			if customPage.name == 'Control':
-				customPage.destroy()
-		# Recreate page for Control
-		self.page = self.basecontrol.appendCustomPage('Control')
+        # If the first char is a digit, precede it by a capital P
+        firstChar = re.sub(r"\d", "P" + firstChar, firstChar)
 
-		if uic is not None:
-			for anOp in uic.ops('./*'):
-				anOp.destroy()
+        prefix = firstChar + name.lower()[1:]
 
-		dat = basecontrol.op('./rename_pars_dat')
-		dat.clear()
+        i = 0
+        parname = prefix
+        while parname in self.added_parnames:
+            i += 1
+            parname = prefix + str(i)
 
-		if faust_xml == '':
-			return
+        self.added_parnames.add(parname)
 
-		root = ET.fromstring(faust_xml)
+        return parname
 
-		ui = root.findall('ui')[0]
+    def build_ui(self, faust_json: str, basecontrol: td.COMP, uic: td.COMP) -> None:
 
-		instrument_name = root.findall('name')
-		if instrument_name is not None:
-			self.instrument_name = instrument_name[0].text
-		else:
-			self.instrument_name = None
+        self.basecontrol = basecontrol  # Base COMP where the control parameters are
+        self.uic = uic  # UI container
 
-		for widget in ui.find('activewidgets').findall('widget'):
-			self.activewidgets[widget.get('id')] = {'widget': widget, 'parname': None}
-		for widget in ui.find('passivewidgets').findall('widget'):
-			self.passivewidgets[widget.get('id')] = {'widget': widget}		
+        self.widgets = dict()
+        self.added_parnames = set()
 
-		self._add_ui('', ui.find('layout'), uic)
+        # todo: delete the pars on the Control page rather than the entire page
+        for customPage in self.basecontrol.customPages:
+            if customPage.name == 'Control':
+                customPage.destroy()
+        # Recreate page for Control
+        self.page = self.basecontrol.appendCustomPage('Control')
 
-		for widget in self.activewidgets.values():
-			dat.appendRow([
-				widget['parname'], widget['faust_path']
-				])
+        if uic is not None:
+            for anOp in uic.ops('./*'):
+                anOp.destroy()
+            uic.par.align = 'verttb'
 
-	def _add_ui(self, path: str, node, container):
+        dat = basecontrol.op('./rename_pars_dat')
+        dat.clear()
 
-		# Note: container might be None
+        if faust_json == '':
+            return
 
-		FAUST = op.FAUST
+        root = json.loads(faust_json)
 
-		layout = node.get('type') # hgroup, vgroup
-		if container is not None:
-			if layout == 'hgroup':
-				container.par.align = 'horizlr'
-			else:
-				container.par.align = 'verttb'
-		
-		label = node.find('label')
-		
-		if label is not None:
-			label = label.text
-			if label == '0x00':  # weird necessary step?
-				# In faust you should have code like `declare name "MyInstrument";`
-				# When this code is missing, `0x00` might show up here.
-				# We replace it with the default `my_dsp` which is used in the FaustCHOP C++ code.
-				if self.basecontrol.par.Polyphony.eval():
-					if self.instrument_name is not None:
-						label = 'Sequencer/DSP1/Polyphonic/Voices/' + self.instrument_name
-					else:
-						label = 'Sequencer/DSP1/Polyphonic/Voices/' + 'my_dsp'
-				elif path == '' and self.instrument_name is not None:
-					label = self.instrument_name
-			path += '/' + legal_chan_name(label)
-		else:
-			label = ''
+        # root["name"]  # todo: use this?
 
-		for i, widgetref in enumerate(node.findall('widgetref')):
-			widgetid = widgetref.get('id')
+        self.all_addresses = set()
+        queue  = deque(root['ui'])
+        while queue:
+            item = queue.pop()
 
-			if widgetid in self.passivewidgets:
-				continue
-			
-			# check if we've haven't already added it to the base
-			if widgetid not in self.added_par_ids:
-				self.added_par_ids.add(widgetid)
-				
-				# find the exact widget
-				widget = self.activewidgets[widgetid]['widget']
-				
-				# add the par to the base
-				widgettype = widget.get('type')
-				parlabel = widget.find('label').text
-				parname = legal_parname(parlabel + ' ' + widgetid)
-				
-				if widgettype in ['vslider', 'hslider']:
-					# it's a slider
-					par = self.page.appendFloat(parname, label=parlabel, size=1)
-					
-					setup_par_float(par[0], widget)
-									
-				elif widgettype == 'button':
-					
-					par = self.page.appendPulse(parname, label=parlabel)
-					
-				elif widgettype == 'checkbox':
-				
-					par = self.page.appendToggle(parname, label=parlabel)
-					
-				elif widgettype == 'nentry':
-				
-					par = self.page.appendMenu(parname, label=parlabel)
-					
-					setup_par_menu(par[0], widget)
-					
-				self.activewidgets[widgetid]['par'] = par[0]
-				self.activewidgets[widgetid]['parname'] = parname
-				self.activewidgets[widgetid]['parlabel'] = parlabel
+            if 'address' in item:
+                self.all_addresses.add(legal_chan_name(item['address']))
 
-				self.activewidgets[widgetid]['faust_path'] = path + '/' + legal_chan_name(widget.find('label').text)
+            if 'items' in item:
+                for a in item['items']:
+                    queue.append(a)
 
-			else:
-				# the par was already added to base_pars
-				parname = self.activewidgets[widgetid]['parname']
-				
-			# add the widget to the UI container.
-			widget = self.activewidgets[widgetid]['widget']
-			widgettype = widget.get('type')
-			if widgettype == 'vslider':
-				widget_source = FAUST.op('./masterSlider_vert')
-			elif widgettype == 'hslider':
-				widget_source = FAUST.op('./masterSlider_horz')
-			elif widgettype == 'button':
-				widget_source = FAUST.op('./masterButton')
-			elif widgettype == 'checkbox':
-				widget_source = FAUST.op('./masterCheckbox')
-			elif widgettype == 'nentry':
-				widget_source = FAUST.op('./masterDropMenu')
-			elif widgettype == 'soundfile':
-				continue
-			else:
-				raise ValueError('Unexpected widget type: ' + widgettype)
+        for item in root['ui']:
+            self._add_ui(item, 0, uic)
 
-			# Look for meta tags such as [style:knob]
-			for meta in widget.findall('meta'):
-				if meta.get('key') == 'style':
-					if meta.text == 'knob':
-						widget_source = FAUST.op('./masterKnob')
+        for widget in self.widgets.values():
+            if widget.par is not None:
+                dat.appendRow([widget.par.name, widget.address])
 
-			if container is not None:
+    def _create_widget(self, item) -> Widget:
 
-				new_widget = container.copy(widget_source, name=parname, includeDocked=True)
-				
-				new_widget.nodeX = i*250
-				
-				# add label to the widget
-				if widgettype in ['hslider', 'vslider']:
-					if widget_source == FAUST.op('./masterKnob'):
-						new_widget.par.Knoblabel = '"' + self.activewidgets[widgetid]['parlabel'] + '"'
-					else:
-						new_widget.par.Sliderlabelnames = '"' + self.activewidgets[widgetid]['parlabel'] + '"'
-				elif widgettype == 'button':
-					new_widget.par.Buttonofflabel = new_widget.par.Buttononlabel = self.activewidgets[widgetid]['parlabel']
-				elif widgettype == 'nentry':
-					new_widget.par.Menunames = " ".join(["'{0}'".format(a) for a in self.activewidgets[widgetid]['par'].menuNames])
-					new_widget.par.Menulabels = " ".join(["'{0}'".format(a) for a in  self.activewidgets[widgetid]['par'].menuLabels])
-				
-				# add binding to the widget
-				new_widget.par.display = True
-				new_widget.par.Value0.mode = ParMode.BIND
-				new_widget.par.Value0.bindExpr = f'op("{self.basecontrol.path}").par.{parname}'
-				new_widget.par.Value0.bindRange = True
-		
-		# For all groups inside, recursively add UI
-		for i, group in enumerate(node.findall('group')):
-		
-			if container is not None:
-				# create a new container for the group
-				newContainer = container.create(containerCOMP, tdu.legalName(group.find('label').text))
-				newContainer.nodeX = i*250
-				newContainer.viewer = True
-			else:
-				newContainer = None
-		
-			# recursively add UI
-			self._add_ui(path, group, newContainer)
+        """add the widget if it's not already in self.widgets. Then return it."""
+        address = legal_chan_name(item['address'])
+
+        label = item['label']
+        widgettype = item['type']
+
+        if address not in self.widgets:
+
+            # add the par to the base
+            parname = self.legal_parname(label)
+
+            if widgettype in ['vslider', 'hslider']:
+                # it's a slider
+                par = self.page.appendFloat(parname, label=label, size=1)
+                setup_par_float(par[0], item)
+
+            elif widgettype == 'button':
+
+                par = self.page.appendPulse(parname, label=label)
+
+            elif widgettype == 'checkbox':
+
+                par = self.page.appendToggle(parname, label=label)
+
+            elif widgettype == 'nentry':
+
+                par = self.page.appendMenu(parname, label=label)
+                setup_par_menu(par[0], item)
+
+            elif widgettype in OUTPUT_WIDGET_TYPES:
+
+                par = [None]
+
+            meta = item['meta'] if 'meta' in item else []
+            self.widgets[address] = Widget(item['type'], address, par[0], meta,
+                                           item['min'] if 'min' in item else 0,
+                                           item['max'] if 'max' in item else 0,
+                                           item['step'] if 'step' in item else 0
+                                           )
+
+        return self.widgets[address]
+
+    def _add_widget_ui(self, widget: Widget, i: int, container: td.COMP, children_items) -> td.COMP:
+
+        if container is None:
+            return None
+
+        FAUST_WIDGETS = op.FAUST.op('./faust_widgets')
+
+        widgettype = widget.type
+
+        # add the widget to the UI container.
+        if widgettype == 'vslider':
+            widget_source = FAUST_WIDGETS.op('./masterSlider_vert')
+        elif widgettype == 'hslider':
+            widget_source = FAUST_WIDGETS.op('./masterSlider_horz')
+        elif widgettype == 'button':
+            widget_source = FAUST_WIDGETS.op('./masterButton')
+        elif widgettype == 'checkbox':
+            widget_source = FAUST_WIDGETS.op('./masterCheckbox')
+        elif widgettype == 'nentry':
+            widget_source = FAUST_WIDGETS.op('./masterDropMenu')
+        elif widgettype == 'hbargraph':
+            widget_source = FAUST_WIDGETS.op('./masterBarGraph')
+        elif widgettype == 'vbargraph':
+            widget_source = FAUST_WIDGETS.op('./masterBarGraph')
+        elif widgettype in ['hgroup', 'vgroup']:
+            widget_source = FAUST_WIDGETS.op('./masterHeader')
+            # edge case where we don't want to create the header
+            if widget.address == 'TD' or widget.address == '0x00':
+                return None
+        elif widgettype == 'tgroup':
+            widget_source = FAUST_WIDGETS.op('./masterRadio')
+        else:
+            raise ValueError(f'Unexpected widget type: {widgettype}')
+
+        # Look for meta tags such as [style:knob]
+        is_knob = False
+        for meta in widget.meta:
+            if 'style' in meta:
+                style = meta['style']
+                if style == 'knob':
+                    widget_source = FAUST_WIDGETS.op('./masterKnob')
+                    is_knob = True
+
+            if 'tooltip' in meta:
+                tooltip = meta['tooltip']
+                # remove double white space in the tooltip
+                tooltip = re.sub("\s+", " ", tooltip)
+                widget.par.help = tooltip
+                # todo: add the tooltip to the new_widget
+
+        name = widget.address.split('/')[-1]
+        new_widget = container.copy(widget_source, name=name, includeDocked=True)
+
+        new_widget.nodeX = 0
+        new_widget.nodeY = 250
+
+        # add label to the widget
+        if widgettype in ['hslider', 'vslider', 'checkbox']:
+            if is_knob:
+                new_widget.par.Knoblabel = widget.par.label
+            else:
+                new_widget.par.Sliderlabelnames = '"' + widget.par.label + '"'
+        elif widgettype == 'button':
+            new_widget.par.Buttonofflabel = new_widget.par.Buttononlabel = widget.par.label
+        elif widgettype == 'nentry':
+            new_widget.par.Menunames = " ".join(["'{0}'".format(a) for a in widget.par.menuNames])
+            new_widget.par.Menulabels = " ".join(["'{0}'".format(a) for a in widget.par.menuLabels])
+        elif widgettype == 'hbargraph':
+            new_widget.par.Sliderorient = 'horz'
+            new_widget.par.Sliderlabelnames = widget.address
+        elif widgettype == 'vbargraph':
+            new_widget.par.Sliderorient = 'vert'
+            new_widget.par.Sliderlabelnames = widget.address
+        elif widgettype in ['hgroup', 'vgroup']:
+            if widget.address == 'DSP1':
+                new_widget.par.Headerlabel = "Instrument"
+            elif widget.address == 'DSP2':
+                new_widget.par.Headerlabel = "Effect"
+            else:
+                new_widget.par.Headerlabel = widget.address
+        elif widgettype == 'tgroup':
+            new_widget.par.Widgetlabel = widget.address
+            child_labels = [child['label'] for child in children_items]
+            if len(child_labels) == 2 and child_labels[0] == 'DSP1' and child_labels[1] == 'DSP2' and \
+                    container == self.uic and self.basecontrol.par.Polyphony.eval() and widget.address in ['Polyphonic', 'Sequencer']:
+                new_widget.par.Radiolabels = "Instrument Effect"
+            else:
+                new_widget.par.Radiolabels = " ".join([f'"{label}"' for label in child_labels])
+        else:
+            raise ValueError(f'Unexpected widget type: {widgettype}')
+
+        if widgettype in OUTPUT_WIDGET_TYPES:
+            new_widget.par.Value0.mode = ParMode.EXPRESSION
+            new_widget.par.Value0.expr = \
+                f'tdu.remap(  op("{self.basecontrol.path}").op("./info1")["bargraph_{name}"]  \
+                , {widget.min}, {widget.max}, 0, 1)'
+        elif widgettype in INPUT_WIDGET_TYPES:
+            # add binding to the widget
+            new_widget.par.Value0.mode = ParMode.BIND
+            new_widget.par.Value0.bindExpr = f'op("{self.basecontrol.path}").par.{widget.par.name}'
+            new_widget.par.Value0.bindRange = True
+        elif widgettype in GROUP_WIDGET_TYPES:
+            pass
+        else:
+            raise ValueError(f'Unexpected widget type: {widgettype}')
+
+        for meta in widget.meta:
+            if 'style' in meta:
+                style = meta['style']
+                if 'menu' in style and widgettype == 'nentry':
+                    # style might be "menu{'Noise':0;'Sawtooth':1}"
+                    # https://github.com/Fr0stbyteR/faust-ui/blob/5da18109241d9c0d44974c9afac402809a3c2995/src/components/Group.ts#L27
+                    reg = re.compile("(?:(?:'|_)(.+?)(?:'|_):([-+]?[0-9]*\.?[0-9]+?))")
+                    matches = reg.findall(style)
+                    # matches == [('Noise', '0'), ('Sawtooth', '1'), ('Triangle', '2')]
+                    new_widget.par.Menunames = " ".join([f"'{tdu.legalName(pair[0])}'" for pair in matches])
+                    new_widget.par.Menulabels = " ".join([f"'{pair[0]}'" for pair in matches])
+
+        return new_widget
+
+    def _add_ui(self, item, i: int, container: td.COMP) -> None:
+
+        widgettype = item['type']  # hgroup, vgroup, tgroup, or other
+
+        label = item['label']
+
+        # For all groups inside, recursively add UI
+        children_items = item['items'] if 'items' in item else []
+
+        new_widget_ui = None
+
+        if widgettype in (INPUT_WIDGET_TYPES + OUTPUT_WIDGET_TYPES + GROUP_WIDGET_TYPES):
+
+            if widgettype in (INPUT_WIDGET_TYPES + OUTPUT_WIDGET_TYPES):
+
+                address = legal_chan_name(item['address'])
+
+                polyphony = self.basecontrol.par.Polyphony.eval()
+                name = address.split('/')[-1]
+                if polyphony:
+
+                    if name.lower() in ["gate", "gain", "note", "freq"]:
+                        # Skip these parameters when Polyphony is enabled.
+                        return
+
+                    if not self.basecontrol.par.Groupvoices.eval():
+
+                        if address.startswith('/Polyphonic/Voices/'):
+                            ungrouped_address = address.replace('/Polyphonic/Voices/', '/Polyphonic/Voice1/')
+                            if ungrouped_address in self.all_addresses:
+                                return
+
+                        if address.startswith('/Sequencer/DSP1/Polyphonic/Voices/'):
+                            ungrouped_address = address.replace('/Sequencer/DSP1/Polyphonic/Voices/', '/Sequencer/DSP1/Polyphonic/Voice1/')
+                            if ungrouped_address in self.all_addresses:
+                                return
+
+                widget = self._create_widget(item)
+            else:
+                widget = Widget(widgettype, label, None, [])
+
+            new_widget_ui = self._add_widget_ui(widget, i, container, children_items)
+
+        elif widgettype == 'soundfile':
+            pass
+        else:
+            raise ValueError('Unexpected widget type: ' + widgettype)
+
+        if container is not None and children_items:
+
+            legalName = label.replace('/', '_')
+            legalName = tdu.legalName(legalName)
+
+            container = container.create(containerCOMP, legalName)
+            container.nodeX = 0
+            container.nodeY = 0
+            container.viewer = True
+            container.par.hmode = 'fill'
+            container.par.vmode = 'fill'
+
+            if widgettype == 'hgroup':
+                container.par.align = 'horizlr'
+            elif widgettype == 'vgroup':
+                container.par.align = 'verttb'
+            elif widgettype == 'tgroup':
+                container.par.align = 'horizlr'
+
+        for j, group in enumerate(children_items):
+
+            if container is not None and group['type'] in GROUP_WIDGET_TYPES:
+                # create a new container for the group
+                legalName = group['label'].replace('/', '_')
+                legalName = tdu.legalName(legalName)
+                newContainer = container.create(containerCOMP, legalName)
+                newContainer.nodeX = j * 250
+                newContainer.nodeY = 0
+                newContainer.viewer = True
+                newContainer.par.hmode = 'fill'
+                newContainer.par.vmode = 'fill'
+                newContainer.par.align = 'verttb'
+                newContainer.par.alignorder = j
+
+                if widgettype == 'tgroup':
+                    newContainer.par.display.mode = ParMode.EXPRESSION
+                    newContainer.par.display.expr = f'op("{new_widget_ui.path}").par.Value0 == me.par.alignorder'
+            else:
+                newContainer = container
+
+            # recursively add UI
+            self._add_ui(group, j, newContainer)

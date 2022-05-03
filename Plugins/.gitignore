@@ -1,2 +1,4 @@
-*
+Plugins.json
+*.pdb
+*.dll
 !.gitignore

@@ -1,8 +1,9 @@
 name: Compile
 on:
+  pull_request: {}
   push:
-    tags:
-    - '*'
+    branches:
+      - main
 jobs:
 
   build-windows:
@@ -31,7 +32,7 @@ jobs:
     - name: Build LLVM
       run: |
         cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64 -DLLVM_ENABLE_ZLIB=off
+        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64 -DLLVM_ENABLE_ZLIB=off -DLLVM_OPTIMIZED_TABLEGEN=ON
         msbuild build/LLVM.sln /property:Configuration=Release
     
     - name: Build TD-Faust (Release)
@@ -47,6 +48,8 @@ jobs:
         move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
         move ${{ github.workspace }}/Plugins/faust.dll TD-Faust_dist
         cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/bin/sndfile.dll TD-Faust_dist
+        cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
+        Remove-Item -Recurse -Force "TD-Faust_dist/faustlibraries/.git"
         tar.exe -c -f TD-Faust-${{ matrix.os }}.zip TD-Faust_dist
 
     - name: Upload artifact
@@ -61,62 +64,94 @@ jobs:
         include:
           - name: macos-x86_64
             os: macos-latest
-            cmake-options: >-
-              -DCMAKE_BUILD_TYPE=Release
-              -DCMAKE_VERBOSE_MAKEFILE=ON
-              -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
-              -DCMAKE_OSX_ARCHITECTURES="x86_64"
-            llvm-options: >-
-              -DLLVM_TARGETS_TO_BUILD="X86"
-              -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-apple-darwin19.6.0"
-          # # todo: we can't build arm64 LLVM yet on GitHub
-          # #       because the compiling procedure involves
-          # #       running what we compile?
-          # #       /bin/sh: ../../../bin/llvm-tblgen: Bad CPU type in executable
-          # - name: macos-arm64
-          #   os: macos-latest
-          #   cmake-options: >-
-          #     -DCMAKE_BUILD_TYPE=Release
-          #     -DCMAKE_VERBOSE_MAKEFILE=ON
-          #     -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
-          #     -DCMAKE_OSX_ARCHITECTURES="arm64"
-          #   llvm-options: >-
-          #     -DLLVM_TARGETS_TO_BUILD="AArch64"
-          #     -DLLVM_DEFAULT_TARGET_TRIPLE="arm64-apple-darwin19.6.0"
+
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: true
 
-    - name: Build libsndfile
-      # brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config speex
+    - name: Build Everything
       run: |
-        cd thirdparty/libsndfile
-        mkdir build && cd build
-        cmake .. -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
-        cmake --build . --config Release
-
-    - name: Build LLVM
-      run: |
-        cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off
-        cmake --build build
-    
-    - name: Use CMake for TD-Faust
-      run: |
-        cmake -Bbuild -G "Xcode" ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
-        cmake -Bbuild -G "Xcode" ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH=${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile/build
-    - name: Build TD-Faust (Release)
-      run: |
-        xcodebuild -configuration Release -project build/TD-Faust.xcodeproj
-        install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib Release/TD-Faust.plugin/Contents/MacOS/TD-Faust
+        sh -v build_macos.sh
 
     - name: Make distribution
       run: |
+        rm -rf Plugins/faustlibraries/.git
+        zip -r TD-Faust-${{ matrix.name }}.zip Plugins
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: my-artifact-${{ matrix.name }}
+        path: TD-Faust-${{ matrix.name }}.zip
+
+  build-ubuntu:
+    strategy:
+      matrix:
+        include:
+          - name: ubuntu-x86_64
+            theContainer: docker://quay.io/pypa/manylinux2014_x86_64
+            os: ubuntu-latest
+            cmake-options: >-
+              -DCMAKE_BUILD_TYPE=Release
+              -DCMAKE_VERBOSE_MAKEFILE=ON
+            llvm-options: >-
+              -DLLVM_TARGETS_TO_BUILD="X86"
+              -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-linux-gnu"
+          - name: ubuntu-aarch64
+            theContainer: docker://quay.io/pypa/manylinux2014_aarch64
+            os: ubuntu-latest
+            cmake-options: >-
+              -DCMAKE_BUILD_TYPE=Release
+              -DCMAKE_VERBOSE_MAKEFILE=ON
+            llvm-options: >-
+              -DLLVM_TARGETS_TO_BUILD="AArch64"
+              -DLLVM_DEFAULT_TARGET_TRIPLE="aarch64-linux-gnu"
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Set up QEMU for aarch64 on Linux
+      if: runner.os == 'Linux'
+      uses: docker/setup-qemu-action@v1
+      with:
+        platforms: all
+
+    - name: Checkout ncurses
+      uses: actions/checkout@v2
+      with:
+        repository: mirror/ncurses
+        path: ncurses
+
+    - name: ncurses install
+      run: |
+        cd ncurses
+        ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
+        make
+        sudo make install
+    - name: Build libsndfile
+      run: |
+        cd thirdparty/libsndfile
+        cmake -Bbuild -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
+        cmake --build build --config Release
+    - name: Build LLVM
+      run: |
+        cd thirdparty/llvm-project/llvm
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off -DLLVM_OPTIMIZED_TABLEGEN=ON
+        cmake --build build --config Release
+    
+    - name: Use CMake for TD-Faust
+      run: |
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
+        cmake --build build --config Release
+    - name: Make distribution
+      run: |
         mkdir TD-Faust_dist
-        cp ${{ github.workspace }}/thirdparty/faust/build/lib/Release/libfaust.2.dylib TD-Faust_dist
-        mv ${{ github.workspace }}/Release/TD-Faust.plugin TD-Faust_dist
+        cp -v -r thirdparty/faust/build/lib TD-Faust_dist
         zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
 
     - name: Upload artifact
@@ -127,7 +162,7 @@ jobs:
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-windows, build-macos]
+    needs: [build-windows, build-macos, build-ubuntu]
     runs-on: ubuntu-latest
     name: "Create Release on GitHub"
     steps:

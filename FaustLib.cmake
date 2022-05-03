@@ -68,7 +68,7 @@ else()
 
 ########## <SndFile>
 include (CMakeFindDependencyMacro)
-if (APPLE)
+if (!WIN32)
 	list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/cmake)
 endif()
 find_package(SndFile REQUIRED)

@@ -30,6 +30,7 @@ which is MIT-Licensed.
 #include <vector>
 #include <map>
 #include <fstream>
+#include <filesystem>
 using namespace std;
 
 #ifndef SAFE_DELETE
@@ -108,6 +109,7 @@ FaustCHOP::FaustCHOP(const OP_NodeInfo* info) : myNodeInfo(info)
 	m_dsp_poly = NULL;
 	m_ui = NULL;
 	m_midi_ui = NULL;
+	json_ui = NULL;
 	m_soundUI = NULL;
 	// zero
 	m_input = NULL;
@@ -168,7 +170,7 @@ void
 FaustCHOP::getChannelName(int32_t index, OP_String* name, const OP_Inputs* inputs, void* reserved1)
 {
 	std::stringstream ss;
-	ss << "chan" << (index+1);
+	ss << "chan" << (index + 1);
 	name->setString(ss.str().c_str());
 }
 
@@ -192,6 +194,7 @@ FaustCHOP::clear()
 	SAFE_DELETE(m_ui);
 	SAFE_DELETE(m_dsp_poly);
 	SAFE_DELETE(m_midi_ui);
+	SAFE_DELETE(json_ui);
 	SAFE_DELETE(m_soundUI);
 
 	//deleteAllDSPFactories();  // don't actually do this!!
@@ -245,7 +248,7 @@ FaustCHOP::allocate(int inputChannels, int outputChannels, int numSamples)
 	m_numOutputChannels = min(outputChannels, MAX_OUTPUTS);
 
 	// allocate channels
-	m_input =  new FAUSTFLOAT * [m_numInputChannels];
+	m_input = new FAUSTFLOAT * [m_numInputChannels];
 	m_output = new FAUSTFLOAT * [m_numOutputChannels];
 	m_allocatedSamples = numSamples;
 	// allocate buffers for each channel
@@ -270,8 +273,13 @@ FaustCHOP::eval(const string& code)
 	// arguments
 	int argc = 0;
 	const char** argv = new const char* [128];
+
+	auto faustlibrariespath = std::filesystem::path(myNodeInfo->pluginPath).parent_path().append("faustlibraries").string();
+	argv[argc++] = "--import-dir";
+	argv[argc++] = faustlibrariespath.c_str();
+
 	if (std::strcmp(m_faustLibrariesPath, "") != 0) {
-		argv[argc++] = "-I";
+		argv[argc++] = "--import-dir";
 		argv[argc++] = m_faustLibrariesPath;
 		//argv[argc++] = "-vec";
 		//argv[argc++] = "-vs";
@@ -289,20 +297,20 @@ FaustCHOP::eval(const string& code)
 	const string theCode = m_autoImport + "\n" + code;
 
 	m_name_app = string("my_dsp_") + std::to_string(numCompiled++);
-            
+
 #if __APPLE__
-    std::string target = getDSPMachineTarget();
+	std::string target = getDSPMachineTarget();
 #else
-    std::string target = std::string("");
+	std::string target = std::string("");
 #endif
 
 	// create new factory
 	if (m_polyphony_enable) {
-		m_poly_factory = createPolyDSPFactoryFromString(m_name_app, theCode,
+		m_poly_factory = createPolyDSPFactoryFromString("TD", theCode,
 			argc, argv, target.c_str(), m_errorString, optimize);
 	}
 	else {
-		m_factory = createDSPFactoryFromString(m_name_app, theCode,
+		m_factory = createDSPFactoryFromString("TD", theCode,
 			argc, argv, target.c_str(), m_errorString, optimize);
 	}
 
@@ -335,7 +343,7 @@ FaustCHOP::eval(const string& code)
 #if __APPLE__
 	if (m_midi_enable) {
 		// Only macOS can support virtual MIDI in.
-        // Use case: you want to send MIDI programmatically to Faust from some other software/algorithm, not midi hardware
+		// Use case: you want to send MIDI programmatically to Faust from some other software/algorithm, not midi hardware
 		m_midi_handler = rt_midi(m_midi_virtual_name, m_midi_virtual);
 	}
 #endif
@@ -349,7 +357,8 @@ FaustCHOP::eval(const string& code)
 		if (m_midi_enable) {
 			m_midi_handler.addMidiIn(m_dsp_poly);
 		}
-	} else {
+	}
+	else {
 		// create DSP instance
 		m_dsp = m_factory->createDSPInstance();
 		if (!m_dsp) {
@@ -359,7 +368,7 @@ FaustCHOP::eval(const string& code)
 	}
 
 	dsp* theDsp = m_polyphony_enable ? m_dsp_poly : m_dsp;
- 
+
 	// make new UI
 	if (m_midi_enable)
 	{
@@ -381,6 +390,20 @@ FaustCHOP::eval(const string& code)
 	int inputs = theDsp->getNumInputs();
 	int outputs = theDsp->getNumOutputs();
 
+	std::vector<std::string> library_list;
+	std::vector<std::string> include_pathnames;
+
+	delete json_ui;
+	json_ui = new JSONUI(m_name_app, "", inputs, outputs, (int)m_srate, "", "", "", "", library_list, include_pathnames, -1, PathTableType(), MemoryLayoutType());
+	theDsp->buildUserInterface(json_ui);
+
+	std::filesystem::create_directory("./dsp_output");
+	ofstream myfile;
+	myfile.open("dsp_output/" + m_name_app + ".json");
+	myfile.seekp(0, ios::beg);
+	myfile << json_ui->JSON(false);
+	myfile.close();
+
 	// see if we need to alloc
 	if (inputs != m_numInputChannels || outputs != m_numOutputChannels) {
 		// clear and allocate
@@ -396,15 +419,15 @@ FaustCHOP::eval(const string& code)
 
 	return true;
 }
- 
-               
+
+
 void
-FaustCHOP::getErrorString(OP_String *error, void *reserved1)
+FaustCHOP::getErrorString(OP_String* error, void* reserved1)
 {
-    error->setString(m_errorString.c_str());
+	error->setString(m_errorString.c_str());
 }
 
-               
+
 bool
 FaustCHOP::compile(const string& path)
 {
@@ -439,34 +462,6 @@ FaustCHOP::setup_touchdesigner_ui()
 			cerr << "Number of Inputs: " << m_numInputChannels << endl;
 			cerr << "Number of Outputs: " << m_numOutputChannels << endl;
 			cerr << "-----------------------------------------------------------" << endl;
-		}
-
-		const string theCode = m_autoImport + "\n" + m_code;
-
-		// arguments
-		int argc = 0;		
-		const char** argv = new const char* [128];
-		argv[argc++] = "-xml";
-		if (strcmp(m_faustLibrariesPath, "") != 0) {
-			argv[argc++] = "-I";
-			argv[argc++] = m_faustLibrariesPath;
-			argv[argc++] = "-O";  // capital O for output directory
-			argv[argc++] = "dsp_output";
-		}
-
-		// This saves to an XML file on disk (undesirable side-effect).
-		// It would be better to get it to a variable.
-		string myError;
-		generateAuxFilesFromString(m_name_app, theCode, argc, argv, myError);
-		if (strcmp(myError.c_str(), "") != 0) {
-			cerr << myError.c_str() << endl;
-		}
-
-		if (argv) {
-			for (int i = 0; i < argc; i++) {
-				argv[i] = NULL;
-			}
-			argv = NULL;
 		}
 	}
 	else {
@@ -538,7 +533,7 @@ FaustCHOP::execute(CHOP_Output* output,
 	m_blockSize = 1024;
 
 	if (controlInput && controlInput->numChannels) {
-		m_blockSize = std::min(m_blockSize, (int) (m_srate/controlInput->sampleRate));
+		m_blockSize = std::min(m_blockSize, (int)(m_srate / controlInput->sampleRate));
 	}
 	if (midiInput && midiInput->numChannels) {
 		m_blockSize = std::min(m_blockSize, (int)(m_srate / midiInput->sampleRate));
@@ -587,7 +582,7 @@ FaustCHOP::execute(CHOP_Output* output,
 	int controlSample = 0;
 	int midiSample = 0;
 
-	double controlToOutputSampleRatio = controlInput ? (double) controlInput->numSamples / (double) output->numSamples : 0.;
+	double controlToOutputSampleRatio = controlInput ? (double)controlInput->numSamples / (double)output->numSamples : 0.;
 
 	double midiToOutputSampleRatio = midiInput ? (double)midiInput->numSamples / (double)output->numSamples : 0.;
 
@@ -601,7 +596,7 @@ FaustCHOP::execute(CHOP_Output* output,
 
 			if (controlSample < controlInput->numSamples) {
 				for (chan = 0; chan < controlInput->numChannels; chan++) {
-					m_ui->setParamValue(controlInput->getChannelName(chan), controlInput->getChannelData(chan)[controlSample]);
+					m_ui->setParamValue(std::string(controlInput->getChannelName(chan)), controlInput->getChannelData(chan)[controlSample]);
 				}
 
 				// If polyphony is enabled and we're grouping voices,
@@ -646,15 +641,15 @@ FaustCHOP::execute(CHOP_Output* output,
 				}
 			}
 		}
-			
+
 		if (audioInput) {
-				
+
 			for (chan = 0; chan < m_numInputChannels; chan++) {
 				writePtr = m_input[chan];
-				readPtr = (float*) audioInput->channelData[chan];
+				readPtr = (float*)audioInput->channelData[chan];
 				readPtr += i;
 
-				memcpy(writePtr, readPtr, max(0, min(numSamples,  audioInput->numSamples-i))* sizeof(float));
+				memcpy(writePtr, readPtr, max(0, min(numSamples, audioInput->numSamples - i)) * sizeof(float));
 			}
 		}
 
@@ -668,7 +663,7 @@ FaustCHOP::execute(CHOP_Output* output,
 		for (chan = 0; chan < output->numChannels; chan++) {
 			writePtr = output->channels[chan];
 			writePtr += i;
-			memcpy(writePtr, m_output[chan], numSamples*sizeof(float));
+			memcpy(writePtr, m_output[chan], numSamples * sizeof(float));
 		}
 	}
 
@@ -680,7 +675,14 @@ FaustCHOP::getNumInfoCHOPChans(void* reserved1)
 {
 	// We return the number of channel we want to output to any Info CHOP
 	// connected to the CHOP. In this example we are just going to send one channel.
-	return 3;
+
+	int numChans = 3;
+
+	if (m_ui) {
+		numChans += m_ui->getNumBarGraphs();
+	}
+
+	return numChans;
 }
 
 void
@@ -707,6 +709,12 @@ FaustCHOP::getInfoCHOPChan(int32_t index,
 	else if (index == 2) {
 		chan->name->setString("block_size");
 		chan->value = m_blockSize;
+	}
+	else {
+		index -= 3;
+
+		chan->name->setString(("bargraph_" + m_ui->getNthBarGraphAddress(index)).c_str());
+		chan->value = m_ui->getNthBarGraph(index);
 	}
 }
 
@@ -792,38 +800,38 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		np.defaultValues[0] = 4.;
 		np.minSliders[0] = 1.;
 		np.maxSliders[0] = 16.;
-        np.minValues[0] = 1.;
-        np.maxValues[0] = 512.;
+		np.minValues[0] = 1.;
+		np.maxValues[0] = 512.;
 		np.clampMins[0] = true;
 		np.clampMaxes[0] = true;
 
 		OP_ParAppendResult res = manager->appendInt(np);
 		assert(res == OP_ParAppendResult::Success);
 	}
-            
-    // Group voices
-    {
-        OP_NumericParameter np;
 
-        np.name = "Groupvoices";
-        np.label = "Group Voices";
-        np.defaultValues[0] = 1.;
+	// Group voices
+	{
+		OP_NumericParameter np;
 
-        OP_ParAppendResult res = manager->appendToggle(np);
-        assert(res == OP_ParAppendResult::Success);
-    }
+		np.name = "Groupvoices";
+		np.label = "Group Voices";
+		np.defaultValues[0] = 1.;
 
-    // Dynamic voices
-    {
-        OP_NumericParameter np;
+		OP_ParAppendResult res = manager->appendToggle(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
 
-        np.name = "Dynamicvoices";
-        np.label = "Dynamic Voices";
-        np.defaultValues[0] = 1.;
+	// Dynamic voices
+	{
+		OP_NumericParameter np;
 
-        OP_ParAppendResult res = manager->appendToggle(np);
-        assert(res == OP_ParAppendResult::Success);
-    }
+		np.name = "Dynamicvoices";
+		np.label = "Dynamic Voices";
+		np.defaultValues[0] = 1.;
+
+		OP_ParAppendResult res = manager->appendToggle(np);
+		assert(res == OP_ParAppendResult::Success);
+	}
 
 	// Midi disable/enable
 	{
@@ -910,17 +918,6 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
-	// Save UI
-	{
-		OP_NumericParameter	np;
-
-		np.name = "Setupuipulse";
-		np.label = "Setup UI";
-
-		OP_ParAppendResult res = manager->appendPulse(np);
-		assert(res == OP_ParAppendResult::Success);
-	}
-
 	// Reset
 	{
 		OP_NumericParameter	np;
@@ -977,10 +974,5 @@ FaustCHOP::pulsePressed(const char* name, void* reserved1)
 	if (!strcmp(name, "Clearmidi"))
 	{
 		clearMIDI();
-	}
-
-	if (!strcmp(name, "Setupuipulse"))
-	{
-		setup_touchdesigner_ui();
 	}
 }
