@@ -159,35 +159,45 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
-    - run: |
-        docker run --rm --privileged hypriot/qemu-register
-    - uses: ${{matrix.theContainer}}
+    - name: Set up QEMU for aarch64 on Linux
+      if: runner.os == 'Linux'
+      uses: docker/setup-qemu-action@v1
       with:
-        args: |
-            git clone git@github.com:mirror/ncurses.git ncurses
-            cd ncurses
-            ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
-            make
-            make install
-            cd ..
+        platforms: all
 
-            cd thirdparty/libsndfile
-            cmake -Bbuild -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
-            cmake --build build --config Release
-            cd ../..
+    - name: Checkout ncurses
+      uses: actions/checkout@v2
+      with:
+        repository: mirror/ncurses
+        path: ncurses
 
-            cd thirdparty/llvm-project/llvm
-            cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off -DLLVM_OPTIMIZED_TABLEGEN=ON
-            cmake --build build --config Release
-            cd ../../..
+    - name: ncurses install
+      run: |
+        cd ncurses
+        ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
+        make
+        make install
+    - name: Build libsndfile
+      run: |
+        cd thirdparty/libsndfile
+        cmake -Bbuild -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
+        cmake --build build --config Release
+    - name: Build LLVM
+      run: |
+        cd thirdparty/llvm-project/llvm
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off -DLLVM_OPTIMIZED_TABLEGEN=ON
+        cmake --build build --config Release
     
-            cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
-            cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
-            cmake --build build --config Release
-
-            mkdir TD-Faust_dist
-            cp -v -r thirdparty/faust/build/lib TD-Faust_dist
-            zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
+    - name: Use CMake for TD-Faust
+      run: |
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
+        cmake --build build --config Release
+    - name: Make distribution
+      run: |
+        mkdir TD-Faust_dist
+        cp -v -r thirdparty/faust/build/lib TD-Faust_dist
+        zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
