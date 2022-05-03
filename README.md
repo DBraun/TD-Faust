@@ -5,7 +5,7 @@ TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio 
  
 * FAUST code can be compiled "just-in-time" and run inside TouchDesigner.
 * Tested on Windows and macOS.
-* Automatically generated user interfaces of native TouchDesigner elements based on the FAUST code.
+* Automatically generated user interfaces of TouchDesigner widgets based on the FAUST code.
 * Up to 256 channels of input and 256 channels of output.
 * Pick your own sample rate.
 * Support for all of the standard [FAUST libraries](https://faustlibraries.grame.fr/) including
@@ -44,7 +44,7 @@ If there's a warning about the codesigning certificate, you may need to compile 
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
 4. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like `Apple Development: example@example.com (ABCDE12345)`. Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
-5. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`
+5. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you are compiling for Apple Silicon, you can adjust the script to compile differently.
 6. Open `TD-Faust.toe`
 
 ## Tutorial
@@ -82,7 +82,7 @@ gain = hslider("Volume[unit:dB]", -12, -80, 20, 0) : si.smoo : ba.db2linear;
 process = freq : os.osc : _*gain <: si.bus(2);
 ```
 
-If you compile this with a Faust Base, the Base will create a secondary page of custom parameters titled "Control". Because of the code we've written there will be two Float parameters named "Freq" and "Volume". In order to automatically create a UI, pressing compile will save a JSON file inside a directory called `dsp_output`.
+If you compile this with a Faust Base, the Base will create a secondary page of custom parameters titled "Control". Because of the code we've written there will be two Float parameters named "Freq" and "Volume". In order to automatically create a UI, pressing compile will save a JSON file inside a directory called `dsp_output`. These files are meant to be temporary and are deleted each time `TD-Faust.toe` opens.
 
 ### Group Voices and Dynamic Voices
 
