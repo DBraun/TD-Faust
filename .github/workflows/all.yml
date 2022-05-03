@@ -73,7 +73,7 @@ jobs:
 
     - name: Build Everything
       run: |
-        sh build_macos.sh
+        sh -v build_macos.sh
 
     - name: Make distribution
       run: |
