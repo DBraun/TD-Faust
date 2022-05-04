@@ -105,6 +105,8 @@ jobs:
             cmake-options: >-
               -DCMAKE_BUILD_TYPE=Release
               -DCMAKE_VERBOSE_MAKEFILE=ON
+              -DCMAKE_SYSTEM_PROCESSOR=aarch64
+              -DCMAKE_FIND_ROOT_PATH=/usr/aarch64-linux-gnu
             llvm-options: >-
               -DLLVM_TARGETS_TO_BUILD="AArch64"
               -DLLVM_DEFAULT_TARGET_TRIPLE="aarch64-linux-gnu"
@@ -145,8 +147,8 @@ jobs:
     
     - name: Use CMake for TD-Faust
       run: |
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
+        cmake -Bbuild ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
+        cmake -Bbuild ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
         cmake --build build --config Release
     - name: Make distribution
       run: |
