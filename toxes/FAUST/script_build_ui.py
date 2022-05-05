@@ -61,6 +61,19 @@ def setup_par_menu(par: td.Par, item):
 
     par.menuNames = par.menuLabels = [str(i) for i in items]
 
+    for meta in (item['meta'] if 'meta' in item else []):
+        if 'style' in meta:
+            style = meta['style']
+
+            if 'menu' in style and item['type'] == 'nentry':
+                # style might be "menu{'Noise':0;'Sawtooth':1}"
+                # https://github.com/Fr0stbyteR/faust-ui/blob/5da18109241d9c0d44974c9afac402809a3c2995/src/components/Group.ts#L27
+                reg = re.compile("(?:(?:'|_)(.+?)(?:'|_):([-+]?[0-9]*\.?[0-9]+?))")
+                matches = reg.findall(style)
+                # matches == [('Noise', '0'), ('Sawtooth', '1'), ('Triangle', '2')]
+                par.menuNames = [tdu.legalName(pair[0]) for pair in matches]
+                par.menuLabels = [pair[0] for pair in matches]
+
 
 class FaustUIBuilder:
 
@@ -209,7 +222,7 @@ class FaustUIBuilder:
         elif widgettype in ['hgroup', 'vgroup']:
             widget_source = FAUST_WIDGETS.op('./masterHeader')
             # edge case where we don't want to create the header
-            if widget.address == 'TD' or widget.address == '0x00':
+            if widget.address == 'TD' or widget.address in ['0x00', 'Instrument', 'DSP1', 'DSP2']:
                 return None
         elif widgettype == 'tgroup':
             widget_source = FAUST_WIDGETS.op('./masterRadio')
@@ -237,7 +250,7 @@ class FaustUIBuilder:
 
         new_widget.par.alignorder = i
         new_widget.nodeX = i*250
-        new_widget.nodeY =  -250
+        new_widget.nodeY =   250
 
         # add label to the widget
         if widgettype in ['hslider', 'vslider', 'checkbox']:
@@ -288,7 +301,7 @@ class FaustUIBuilder:
             new_widget.par.Value0.bindExpr = f'op("{self.basecontrol.path}").par.{widget.par.name}'
             new_widget.par.Value0.bindRange = True
         elif widgettype in GROUP_WIDGET_TYPES:
-            pass
+            new_widget.par.alignorder = -1
         else:
             raise ValueError(f'Unexpected widget type: {widgettype}')
 
@@ -296,19 +309,23 @@ class FaustUIBuilder:
             if 'style' in meta:
                 style = meta['style']
                 if 'menu' in style and widgettype == 'nentry':
-                    # style might be "menu{'Noise':0;'Sawtooth':1}"
-                    # https://github.com/Fr0stbyteR/faust-ui/blob/5da18109241d9c0d44974c9afac402809a3c2995/src/components/Group.ts#L27
-                    reg = re.compile("(?:(?:'|_)(.+?)(?:'|_):([-+]?[0-9]*\.?[0-9]+?))")
-                    matches = reg.findall(style)
-                    # matches == [('Noise', '0'), ('Sawtooth', '1'), ('Triangle', '2')]
-                    new_widget.par.Menunames = " ".join([f"'{tdu.legalName(pair[0])}'" for pair in matches])
-                    new_widget.par.Menulabels = " ".join([f"'{pair[0]}'" for pair in matches])
+                    new_widget.par.Menunames = new_widget.par.Menulabels = " ".join([f"'{label}'" for label in widget.par.menuLabels])
 
         return new_widget
 
+    def _destroy_container_if_empty(self, container: td.COMP):
+
+        if container is not None:
+            if container.numChildren == 0:
+                container.destroy()
+            elif container.numChildren == 1:
+                pageNames = [page.name for page in container.children[0].customPages]
+                if 'Header' in pageNames:
+                    container.destroy()
+
     def _add_ui(self, item, i: int, container: td.COMP) -> None:
 
-        widgettype = item['type']  # hgroup, vgroup, tgroup, or other
+        widgettype = item['type']
 
         label = item['label']
 
@@ -324,17 +341,26 @@ class FaustUIBuilder:
                 address = legal_chan_name(item['address'])
 
                 name = address.split('/')[-1]
-                if self.basecontrol.par.Polyphony.eval() and not self.basecontrol.par.Groupvoices.eval():
 
-                    if address.startswith('/Polyphonic/Voices/'):
-                        ungrouped_address = address.replace('/Polyphonic/Voices/', '/Polyphonic/Voice1/')
-                        if ungrouped_address in self.all_addresses:
+                if name == 'Panic':
+                    return
+
+                if self.basecontrol.par.Polyphony.eval():
+
+                    if self.basecontrol.par.Groupvoices.eval():
+                        if name.lower() in ['freq', 'gain', 'gate', 'note']:
                             return
 
-                    if address.startswith('/Sequencer/DSP1/Polyphonic/Voices/'):
-                        ungrouped_address = address.replace('/Sequencer/DSP1/Polyphonic/Voices/', '/Sequencer/DSP1/Polyphonic/Voice1/')
-                        if ungrouped_address in self.all_addresses:
-                            return
+                    else:
+                        if address.startswith('/Polyphonic/Voices/'):
+                            ungrouped_address = address.replace('/Polyphonic/Voices/', '/Polyphonic/Voice1/')
+                            if ungrouped_address in self.all_addresses:
+                                return
+
+                        if address.startswith('/Sequencer/DSP1/Polyphonic/Voices/'):
+                            ungrouped_address = address.replace('/Sequencer/DSP1/Polyphonic/Voices/', '/Sequencer/DSP1/Polyphonic/Voice1/')
+                            if ungrouped_address in self.all_addresses:
+                                return
 
                 widget = self._create_widget(item)
             else:
@@ -352,50 +378,50 @@ class FaustUIBuilder:
             legalName = label.replace('/', '_')
             legalName = tdu.legalName(legalName)
 
-            container = container.create(containerCOMP, legalName)
-            container.nodeX = 0
-            container.nodeY = 0
-            container.viewer = True
-            container.par.hmode = 'fill'
-            container.par.vmode = 'fill'
+            groupContainer = container.create(containerCOMP, legalName)
+            groupContainer.nodeX = 0
+            groupContainer.nodeY = 0
+            groupContainer.viewer = True
+            groupContainer.par.hmode = 'fill'
+            groupContainer.par.vmode = 'fill'
 
             if widgettype == 'hgroup':
-                container.par.align = 'horizlr'
+                groupContainer.par.align = 'horizlr'
             elif widgettype == 'vgroup':
-                container.par.align = 'verttb'
+                groupContainer.par.align = 'verttb'
             elif widgettype == 'tgroup':
-                container.par.align = 'horizlr'
+                groupContainer.par.align = 'horizlr'
+        else:
+            groupContainer = None
 
-        newContainer = None
+        subContainer = groupContainer or container 
+        subSubContainer = None
 
         for j, group in enumerate(children_items):
 
-            if container is not None and group['type'] in GROUP_WIDGET_TYPES:
+            if subContainer is not None and group['type'] in GROUP_WIDGET_TYPES:
                 # create a new container for the group
                 legalName = group['label'].replace('/', '_')
                 legalName = tdu.legalName(legalName)
-                newContainer = container.create(containerCOMP, legalName)
-                newContainer.nodeX = j * 250
-                newContainer.nodeY = 0
-                newContainer.viewer = True
-                newContainer.par.hmode = 'fill'
-                newContainer.par.vmode = 'fill'
-                newContainer.par.align = 'verttb'
-                newContainer.par.alignorder = j
+                subSubContainer = subContainer.create(containerCOMP, legalName)
+                subSubContainer.nodeX = j * 250
+                subSubContainer.nodeY = 0
+                subSubContainer.viewer = True
+                subSubContainer.par.hmode = 'fill'
+                subSubContainer.par.vmode = 'fill'
+                subSubContainer.par.align = 'verttb'
+                subSubContainer.par.alignorder = j
 
-                if widgettype == 'tgroup':
-                    newContainer.par.display.mode = ParMode.EXPRESSION
-                    newContainer.par.display.expr = f'op("{new_widget_ui.path}").par.Value0 == me.par.alignorder'
+                if new_widget_ui is not None and widgettype == 'tgroup':
+                    subSubContainer.par.display.mode = ParMode.EXPRESSION
+                    subSubContainer.par.display.expr = f'op("{new_widget_ui.path}").par.Value0 == me.par.alignorder'
             else:
-                newContainer = container
+                subSubContainer = subContainer
 
             # recursively add UI
-            self._add_ui(group, j, newContainer)
+            self._add_ui(group, j, subSubContainer)
 
-        if newContainer is not None:
-            if newContainer.numChildren == 0:
-                newContainer.destroy()
-            elif newContainer.numChildren == 1:
-                pageNames = [page.name for page in newContainer.children[0].customPages]
-                if 'Header' in pageNames:
-                    newContainer.destroy()
+        are_different = subSubContainer != groupContainer
+        self._destroy_container_if_empty(subSubContainer)
+        if are_different:
+            self._destroy_container_if_empty(groupContainer)
