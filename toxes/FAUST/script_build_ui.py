@@ -59,8 +59,7 @@ def setup_par_menu(par: td.Par, item):
 
     items = [min((theMin + step * i), theMax) for i in range(numItems)]
 
-    par.menuNames = ['i' + str(i) for i in items]
-    par.menuLabels = [str(i) for i in items]
+    par.menuNames = par.menuLabels = [str(i) for i in items]
 
 
 class FaustUIBuilder:
@@ -159,7 +158,7 @@ class FaustUIBuilder:
 
             elif widgettype == 'button':
 
-                par = self.page.appendPulse(parname, label=label)
+                par = self.page.appendToggle(parname, label=label)
 
             elif widgettype == 'checkbox':
 
@@ -202,7 +201,7 @@ class FaustUIBuilder:
         elif widgettype == 'checkbox':
             widget_source = FAUST_WIDGETS.op('./masterCheckbox')
         elif widgettype == 'nentry':
-            widget_source = FAUST_WIDGETS.op('./masterDropMenu')
+            widget_source = FAUST_WIDGETS.op('./masterDropDownButton')
         elif widgettype == 'hbargraph':
             widget_source = FAUST_WIDGETS.op('./masterBarGraph')
         elif widgettype == 'vbargraph':
@@ -236,18 +235,22 @@ class FaustUIBuilder:
         name = widget.address.split('/')[-1]
         new_widget = container.copy(widget_source, name=name, includeDocked=True)
 
-        new_widget.nodeX = 0
-        new_widget.nodeY = 250
+        new_widget.par.alignorder = i
+        new_widget.nodeX = i*250
+        new_widget.nodeY =  -250
 
         # add label to the widget
         if widgettype in ['hslider', 'vslider', 'checkbox']:
             if is_knob:
                 new_widget.par.Knoblabel = widget.par.label
-            else:
+            elif widgettype in ['hslider', 'vslider']:
                 new_widget.par.Sliderlabelnames = '"' + widget.par.label + '"'
+            else:
+                new_widget.par.Widgetlabel = widget.par.label
         elif widgettype == 'button':
             new_widget.par.Buttonofflabel = new_widget.par.Buttononlabel = widget.par.label
         elif widgettype == 'nentry':
+            new_widget.par.Widgetlabel = widget.par.label
             new_widget.par.Menunames = " ".join(["'{0}'".format(a) for a in widget.par.menuNames])
             new_widget.par.Menulabels = " ".join(["'{0}'".format(a) for a in widget.par.menuLabels])
         elif widgettype == 'hbargraph':
@@ -320,25 +323,18 @@ class FaustUIBuilder:
 
                 address = legal_chan_name(item['address'])
 
-                polyphony = self.basecontrol.par.Polyphony.eval()
                 name = address.split('/')[-1]
-                if polyphony:
+                if self.basecontrol.par.Polyphony.eval() and not self.basecontrol.par.Groupvoices.eval():
 
-                    if name.lower() in ["gate", "gain", "note", "freq"]:
-                        # Skip these parameters when Polyphony is enabled.
-                        return
+                    if address.startswith('/Polyphonic/Voices/'):
+                        ungrouped_address = address.replace('/Polyphonic/Voices/', '/Polyphonic/Voice1/')
+                        if ungrouped_address in self.all_addresses:
+                            return
 
-                    if not self.basecontrol.par.Groupvoices.eval():
-
-                        if address.startswith('/Polyphonic/Voices/'):
-                            ungrouped_address = address.replace('/Polyphonic/Voices/', '/Polyphonic/Voice1/')
-                            if ungrouped_address in self.all_addresses:
-                                return
-
-                        if address.startswith('/Sequencer/DSP1/Polyphonic/Voices/'):
-                            ungrouped_address = address.replace('/Sequencer/DSP1/Polyphonic/Voices/', '/Sequencer/DSP1/Polyphonic/Voice1/')
-                            if ungrouped_address in self.all_addresses:
-                                return
+                    if address.startswith('/Sequencer/DSP1/Polyphonic/Voices/'):
+                        ungrouped_address = address.replace('/Sequencer/DSP1/Polyphonic/Voices/', '/Sequencer/DSP1/Polyphonic/Voice1/')
+                        if ungrouped_address in self.all_addresses:
+                            return
 
                 widget = self._create_widget(item)
             else:
@@ -370,6 +366,8 @@ class FaustUIBuilder:
             elif widgettype == 'tgroup':
                 container.par.align = 'horizlr'
 
+        newContainer = None
+
         for j, group in enumerate(children_items):
 
             if container is not None and group['type'] in GROUP_WIDGET_TYPES:
@@ -393,3 +391,11 @@ class FaustUIBuilder:
 
             # recursively add UI
             self._add_ui(group, j, newContainer)
+
+        if newContainer is not None:
+            if newContainer.numChildren == 0:
+                newContainer.destroy()
+            elif newContainer.numChildren == 1:
+                pageNames = [page.name for page in newContainer.children[0].customPages]
+                if 'Header' in pageNames:
+                    newContainer.destroy()
