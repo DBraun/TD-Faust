@@ -18,7 +18,7 @@ TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio 
 
 Demo:
 
-[![Demo Video Screenshot](https://img.youtube.com/vi/0qi2lp_TgE0/0.jpg)](https://www.youtube.com/watch?v=0qi2lp_TgE0 "FAUST in TouchDesigner (Audio Coding Demo)")
+[![Demo Video Screenshot](https://img.youtube.com/vi/r9oTSwU8ahw/0.jpg)](https://www.youtube.com/watch?v=r9oTSwU8ahw "FAUST in TouchDesigner (Audio Coding Demo)")
 
 ## New to FAUST?
 
