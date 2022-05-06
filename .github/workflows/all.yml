@@ -53,7 +53,7 @@ jobs:
         cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/bin/sndfile.dll TD-Faust_dist
         cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
         Remove-Item -Recurse -Force "TD-Faust_dist/faustlibraries/.git"
-        tar.exe -c -f TD-Faust-${{ matrix.os }}.zip TD-Faust_dist
+        7z a TD-Faust-${{ matrix.os }}.zip ./TD-Faust_dist/* -r
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
