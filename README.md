@@ -36,9 +36,11 @@ Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. D
 
 ### macOS
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib`, `TD-Faust.plugin`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
+<!-- Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib`, `TD-Faust.plugin`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
-If there's a warning about the codesigning certificate, you may need to compile TD-Faust on your own computer.
+If there's a warning about the codesigning certificate, you may need to compile TD-Faust on your own computer. -->
+
+MacOS users need to compile TD-Faust on their own computers due to code-signing issues.
 
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
@@ -73,7 +75,7 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 
 ### Automatic Custom Parameters and UI
 
-One great feature of TD-Faust is that user interfaces that appear in the Faust code become [Custom Parameters](https://docs.derivative.ca/Custom_Parameters) on the Faust Base. If a Viewer COMP is set, then it can be automatically filled in widgets with [binding](https://docs.derivative.ca/Binding). Look at the simple Faust code below:
+One great feature of TD-Faust is that user interfaces that appear in the Faust code become [Custom Parameters](https://docs.derivative.ca/Custom_Parameters) on the Faust Base. If a Viewer COMP is set, then it can be automatically filled in with widgets with [binding](https://docs.derivative.ca/Binding). Look at the simple Faust code below:
 
 ```faust
 import("stdfaust.lib");
@@ -82,7 +84,7 @@ gain = hslider("Volume[unit:dB]", -12, -80, 20, 0) : si.smoo : ba.db2linear;
 process = freq : os.osc : _*gain <: si.bus(2);
 ```
 
-If you compile this with a Faust Base, the Base will create a secondary page of custom parameters titled "Control". Because of the code we've written there will be two Float parameters named "Freq" and "Volume". In order to automatically create a UI, pressing compile will save a JSON file inside a directory called `dsp_output`. These files are meant to be temporary and are deleted each time `TD-Faust.toe` opens.
+If you compile this with a Faust Base, the Base will create a "Control" page of custom parameters. Because of the code we've written, there will be two Float parameters named "Freq" and "Volume". In order to automatically create a UI, pressing compile will save a JSON file inside a directory called `dsp_output`. These files are meant to be temporary and are deleted each time `TD-Faust.toe` opens.
 
 ### Group Voices and Dynamic Voices
 
@@ -109,11 +111,19 @@ volume = hslider("Volume", 1., 0., 1., 0);
 process = os.osc(440.)*volume <: _, _;
 ```
 
-In TouchDesigner, we can press "Compile" to get a "Volume" custom parameter on the "Control" page of the Faust base. You can look inside the base to see how the custom parameter is wired into the Faust CHOP. By default, this "Volume" signal will only be the project cook rate (60 Hz). Therefore, as you change the volume, you will hear artifacts in the output. There are two solutions:
+In TouchDesigner, we can press "Compile" to get a "Volume" custom parameter on the "Control" page of the Faust base. You can look inside the base to see how the custom parameter is wired into the Faust CHOP. By default, this "Volume" signal will only be the project cook rate (60 Hz). Therefore, as you change the volume, you will hear artifacts in the output. To reduce artifacts, there are three solutions:
 
 1. Use [si.smoo](https://faustlibraries.grame.fr/libs/signals/#sismoo) or [si.smooth](https://faustlibraries.grame.fr/libs/signals/#sismooth) to smooth the control signal: `volume = hslider("Volume", 1., 0., 1., 0) : si.smoo;`
 
 2. Create a higher sample-rate control signal, possibly as high as the Faust CHOP, and connect it as the second input to the Faust base.
+
+3. Re-design your code so that high-rate custom parameters are actually input signals.
+```faust
+import("stdfaust.lib");
+// "volume" is now an input signal
+process = _ * os.osc(440.) <: _, _;
+```
+You could then connect a high-rate single-channel "volume" CHOP to the first input of the Faust Base.
 
 ### Using TD-Faust in New Projects
 
