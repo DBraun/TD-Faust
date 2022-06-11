@@ -198,7 +198,7 @@ FaustCHOP::clear()
 	SAFE_DELETE(m_soundUI);
 
 	//deleteAllDSPFactories();  // don't actually do this!!
-	deleteDSPFactory(m_factory);
+	deleteDSPFactory(m_factory); m_factory = nullptr;
 	SAFE_DELETE(m_poly_factory);
 
 	clearMIDI();
