@@ -18,7 +18,7 @@ which is MIT-Licensed.
 */
 
 #include "CHOP_CPlusPlusBase.h"
-//using namespace TD;
+using namespace TD;
 #include <iostream>
 
 //#include <chrono>
@@ -54,11 +54,22 @@ which is MIT-Licensed.
 #endif
 
 #ifndef MAX_INPUTS
-#define MAX_INPUTS 256
+#define MAX_INPUTS 16384
 #endif
 #ifndef MAX_OUTPUTS
-#define MAX_OUTPUTS 256
+#define MAX_OUTPUTS 16384
 #endif
+
+#ifdef _WIN32
+    #include <Python.h>
+    #include <structmember.h>
+    #include <unicodeobject.h>
+#else
+    #include <Python/Python.h>
+    #include <Python/structmember.h>
+    #include <Python/unicodeobject.h>
+#endif
+
 
 // To get more help about these functions, look at CHOP_CPlusPlusBase.h
 class FaustCHOP : public CHOP_CPlusPlusBase
@@ -99,6 +110,14 @@ public:
 	void setup_touchdesigner_ui();
 	string code();
 
+    // Python methods
+    void sendNoteOff(int channel, int note, int velocity);
+    void sendNoteOn(int channel, int note, int velocity, double noteOffDelay, int noteOffVelocity);
+    void sendAllNotesOff(int channel);
+    void panic();
+    void sendPitchBend(int channel, int wheel);
+    void sendProgram(int channel, int value);
+    void sendControl(int channel, int ctrl, int value);
 
 private:
 
@@ -110,7 +129,7 @@ private:
 	// In this example this value will be incremented each time the execute()
 	// function is called, then passes back to the CHOP 
 	int32_t				myExecuteCount;
-
+    
 	// sample rate
 	float m_srate = 44100.;
 
@@ -161,9 +180,10 @@ private:
 	int m_midiBuffer[127]; // store velocity for each pitch
 
 	bool m_wantCompile = false;
+    bool m_wantReset = false;
 	//microseconds myDuration;
 
 	int m_blockSize = 0;
     
-    void getErrorString(OP_String *error, void *reserved1);
+    void getErrorString(OP_String *error, void *reserved1) override;
 };

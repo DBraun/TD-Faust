@@ -34,6 +34,8 @@ Demo:
 
 Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, `sndfile.dll`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
+If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. Then you can open a cmd window to this repo's directory and run `call build_windows.bat`.
+
 ### macOS
 
 <!-- Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib`, `TD-Faust.plugin`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
@@ -46,8 +48,9 @@ MacOS users need to compile TD-Faust on their own computers due to code-signing 
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
 4. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like `Apple Development: example@example.com (ABCDE12345)`. Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
-5. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you are compiling for Apple Silicon, you can adjust the script to compile differently.
-6. Open `TD-Faust.toe`
+5. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/) and confirm it's in your system PATH.
+6. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you are compiling for Apple Silicon, you can adjust the script to compile differently.
+7. Open `TD-Faust.toe`
 
 ## Tutorial
 
