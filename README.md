@@ -6,7 +6,7 @@ TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio 
 * FAUST code can be compiled "just-in-time" and run inside TouchDesigner.
 * Tested on Windows and macOS.
 * Automatically generated user interfaces of TouchDesigner widgets based on the FAUST code.
-* Up to 256 channels of input and 256 channels of output.
+* Up to 16384 channels of input and 16384 channels of output.
 * Pick your own sample rate.
 * Support for all of the standard [FAUST libraries](https://faustlibraries.grame.fr/) including
 * * High-order ambisonics

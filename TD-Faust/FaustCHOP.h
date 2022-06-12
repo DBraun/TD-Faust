@@ -54,10 +54,10 @@ which is MIT-Licensed.
 #endif
 
 #ifndef MAX_INPUTS
-#define MAX_INPUTS 1024
+#define MAX_INPUTS 16384
 #endif
 #ifndef MAX_OUTPUTS
-#define MAX_OUTPUTS 1024
+#define MAX_OUTPUTS 16384
 #endif
 
 // To get more help about these functions, look at CHOP_CPlusPlusBase.h
