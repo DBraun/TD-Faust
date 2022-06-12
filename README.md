@@ -16,9 +16,11 @@ TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio 
 * Support for [polyphonic MIDI](https://faustdoc.grame.fr/manual/midi/).
 * * You can address parameters of individual voices (like [MPE](https://en.wikipedia.org/wiki/MIDI#MIDI_Polyphonic_Expression)) or group them together.
 
-Demo:
+Demo / Tutorial:
 
 [![Demo Video Screenshot](https://img.youtube.com/vi/r9oTSwU8ahw/0.jpg)](https://www.youtube.com/watch?v=r9oTSwU8ahw "FAUST in TouchDesigner (Audio Coding Demo)")
+
+Examples of projects made with TD-Faust can be found [here](https://github.com/DBraun/TD-Faust/wiki/Made-With-TD-Faust).
 
 ## New to FAUST?
 
