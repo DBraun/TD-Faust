@@ -48,7 +48,7 @@ MacOS users need to compile TD-Faust on their own computers due to code-signing 
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
 4. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like `Apple Development: example@example.com (ABCDE12345)`. Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
-5. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you are compiling for Apple Silicon, you can adjust the script to compile differently.
+5. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you have an Apple Silicon CPU, it will build TD-Faust to be compatible with the [Apple Silicon TouchDesigner builds](https://derivative.ca/download/archive). If you want to build for `x86_64` despite this, you can adjust `build_macos.sh`.
 6. Open `TD-Faust.toe`
 
 ## Tutorial
