@@ -53,23 +53,7 @@ cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_OSX_ARCHITECTURES=$CMAKE_
 # Build TD-Faust (Release)
 xcodebuild -configuration Release -project build/TD-Faust.xcodeproj
 
-# Steps so that libfaust.2.dylib is found as a dependency
-install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib Release/TD-Faust.plugin/Contents/MacOS/TD-Faust
-
-if [ -n "$CODESIGN_IDENTITY" ]; then
-    echo "Doing codesigning."
-    # codesigning
-    # Open Keychain Access. Go to "login". Look for "Apple Development".
-    # run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted.
-    codesign --force --deep --sign "$CODESIGN_IDENTITY" Release/TD-Faust.plugin/Contents/MacOS/TD-Faust
-    # # Confirm the codesigning
-    codesign -vvvv Release/TD-Faust.plugin/Contents/MacOS/TD-Faust
-else
-    echo "Skipping codesigning."
-fi
-
 # # Copy to Plugins directory
-mv thirdparty/faust/build/lib/Release/libfaust.2.dylib Plugins
 mv Release/TD-Faust.plugin Plugins
 
 echo "All Done!"
