@@ -93,10 +93,6 @@ The `Group Voices` and `Dynamic Voices` toggles matter when using [polyphony](ht
 
 If you enable `Group Voices`, one set of parameters will control all voices at once. Otherwise, you will need to address a set of parameters for each voice.
 
-If `Group Voices` is disabled, the printout will look like this:
-
-Note how there is a set of parameters for each voice. All parameters can be addressed individually with the input CHOP.
-
 If you enable `Dynamic Voices`, then voices whose notes have been released will be dynamically turned off in order to save computation. Dynamic Voices should be on in most cases such as when you're wiring a MIDI buffer as the third input to the Faust CHOP. There is a special case in which you might want `Dynamic Voices` off:
 * You are not wiring a MIDI buffer as the third input.
 * `Group Voices` is off.
@@ -104,12 +100,12 @@ If you enable `Dynamic Voices`, then voices whose notes have been released will 
 
 ### Control Rate and Sample Rate
 
-The sample rate is typically a high number such as 44100 Hz, and the control rate of UI parameters might be only 60 Hz. This can lead to artifacts. Suppose we are listening to a 44.1 kHz signal, but we are multiplying it by a 60 Hz "control" signal such as a UI slider meant to control the volume.
+The sample rate is typically a high number such as 44100 Hz, and the control rate of UI parameters might be only 60 Hz. This can lead to artifacts. Suppose we are listening to a 44.1 kHz signal, but we are multiplying it by a 60 Hz "control" signal such as a TouchDesigner parameter meant to control the volume.
 
 ```faust
 import("stdfaust.lib");
 volume = hslider("Volume", 1., 0., 1., 0);
-process = os.osc(440.)*volume <: _, _;
+process = os.osc(440.)*volume <: si.bus(2);
 ```
 
 In TouchDesigner, we can press "Compile" to get a "Volume" custom parameter on the "Control" page of the Faust base. You can look inside the base to see how the custom parameter is wired into the Faust CHOP. By default, this "Volume" signal will only be the project cook rate (60 Hz). Therefore, as you change the volume, you will hear artifacts in the output. To reduce artifacts, there are three solutions:
@@ -122,7 +118,7 @@ In TouchDesigner, we can press "Compile" to get a "Volume" custom parameter on t
 ```faust
 import("stdfaust.lib");
 // "volume" is now an input signal
-process = _ * os.osc(440.) <: _, _;
+process = _ * os.osc(440.) <: si.bus(2);
 ```
 You could then connect a high-rate single-channel "volume" CHOP to the first input of the Faust Base.
 
