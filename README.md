@@ -6,7 +6,7 @@ TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio 
 * FAUST code can be compiled "just-in-time" and run inside TouchDesigner.
 * Tested on Windows and macOS.
 * Automatically generated user interfaces of TouchDesigner widgets based on the FAUST code.
-* Up to 256 channels of input and 256 channels of output.
+* Up to 16384 channels of input and 16384 channels of output.
 * Pick your own sample rate.
 * Support for all of the standard [FAUST libraries](https://faustlibraries.grame.fr/) including
 * * High-order ambisonics
@@ -16,9 +16,11 @@ TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio 
 * Support for [polyphonic MIDI](https://faustdoc.grame.fr/manual/midi/).
 * * You can address parameters of individual voices (like [MPE](https://en.wikipedia.org/wiki/MIDI#MIDI_Polyphonic_Expression)) or group them together.
 
-Demo:
+Demo / Tutorial:
 
 [![Demo Video Screenshot](https://img.youtube.com/vi/r9oTSwU8ahw/0.jpg)](https://www.youtube.com/watch?v=r9oTSwU8ahw "FAUST in TouchDesigner (Audio Coding Demo)")
+
+Examples of projects made with TD-Faust can be found [here](https://github.com/DBraun/TD-Faust/wiki/Made-With-TD-Faust).
 
 ## New to FAUST?
 
@@ -47,10 +49,9 @@ MacOS users need to compile TD-Faust on their own computers due to code-signing 
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
-4. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like `Apple Development: example@example.com (ABCDE12345)`. Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
-5. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/) and confirm it's in your system PATH.
-6. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you are compiling for Apple Silicon, you can adjust the script to compile differently.
-7. Open `TD-Faust.toe`
+4. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/) and confirm it's in your system PATH.
+5. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you have an Apple Silicon CPU, it will build TD-Faust to be compatible with the [Apple Silicon TouchDesigner builds](https://derivative.ca/download/archive). If you want to build for `x86_64` despite this, you can adjust `build_macos.sh`.
+6. Open `TD-Faust.toe`
 
 ## Tutorial
 
@@ -95,10 +96,6 @@ The `Group Voices` and `Dynamic Voices` toggles matter when using [polyphony](ht
 
 If you enable `Group Voices`, one set of parameters will control all voices at once. Otherwise, you will need to address a set of parameters for each voice.
 
-If `Group Voices` is disabled, the printout will look like this:
-
-Note how there is a set of parameters for each voice. All parameters can be addressed individually with the input CHOP.
-
 If you enable `Dynamic Voices`, then voices whose notes have been released will be dynamically turned off in order to save computation. Dynamic Voices should be on in most cases such as when you're wiring a MIDI buffer as the third input to the Faust CHOP. There is a special case in which you might want `Dynamic Voices` off:
 * You are not wiring a MIDI buffer as the third input.
 * `Group Voices` is off.
@@ -106,12 +103,12 @@ If you enable `Dynamic Voices`, then voices whose notes have been released will 
 
 ### Control Rate and Sample Rate
 
-The sample rate is typically a high number such as 44100 Hz, and the control rate of UI parameters might be only 60 Hz. This can lead to artifacts. Suppose we are listening to a 44.1 kHz signal, but we are multiplying it by a 60 Hz "control" signal such as a UI slider meant to control the volume.
+The sample rate is typically a high number such as 44100 Hz, and the control rate of UI parameters might be only 60 Hz. This can lead to artifacts. Suppose we are listening to a 44.1 kHz signal, but we are multiplying it by a 60 Hz "control" signal such as a TouchDesigner parameter meant to control the volume.
 
 ```faust
 import("stdfaust.lib");
 volume = hslider("Volume", 1., 0., 1., 0);
-process = os.osc(440.)*volume <: _, _;
+process = os.osc(440.)*volume <: si.bus(2);
 ```
 
 In TouchDesigner, we can press "Compile" to get a "Volume" custom parameter on the "Control" page of the Faust base. You can look inside the base to see how the custom parameter is wired into the Faust CHOP. By default, this "Volume" signal will only be the project cook rate (60 Hz). Therefore, as you change the volume, you will hear artifacts in the output. To reduce artifacts, there are three solutions:
@@ -124,7 +121,7 @@ In TouchDesigner, we can press "Compile" to get a "Volume" custom parameter on t
 ```faust
 import("stdfaust.lib");
 // "volume" is now an input signal
-process = _ * os.osc(440.) <: _, _;
+process = _ * os.osc(440.) <: si.bus(2);
 ```
 You could then connect a high-rate single-channel "volume" CHOP to the first input of the Faust Base.
 

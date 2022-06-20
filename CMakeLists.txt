@@ -211,21 +211,25 @@ endif()
 # The following step will create a post-build event that copies the custom DLL to
 # the Plugins folder.
 if(APPLE)
-## For some reason if you move the file like this, it fails to load in TD.
-#  add_custom_command(TARGET ${PROJECT_NAME}
-#                     POST_BUILD
-#                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#                     "$<TARGET_FILE:TD-Faust>"
-#                     ${CMAKE_SOURCE_DIR}/Plugins/${PROJECT_NAME}.plugin)
+    # Steps so that libfaust.2.dylib is found as a dependency
+    add_custom_command(TARGET ${PROJECT_NAME} 
+        POST_BUILD COMMAND
+        install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib "$<TARGET_FILE:TD-Faust>"
+        )
+    add_custom_command(TARGET ${PROJECT_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                       ${CMAKE_SOURCE_DIR}/thirdparty/faust/build/lib/Release/libfaust.2.dylib
+                       ${CMAKE_SOURCE_DIR}/Plugins/libfaust.2.dylib)
 else()
-  add_custom_command(TARGET ${PROJECT_NAME}
-                     POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "$<TARGET_FILE:TD-Faust>"
-                     ${CMAKE_SOURCE_DIR}/Plugins)
+    add_custom_command(TARGET ${PROJECT_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                       "$<TARGET_FILE:TD-Faust>"
+                       ${CMAKE_SOURCE_DIR}/Plugins)
+    add_custom_command(TARGET ${PROJECT_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                       "$<TARGET_FILE:dynamiclib>"
+                       ${CMAKE_SOURCE_DIR}/Plugins)
 endif()
-  add_custom_command(TARGET ${PROJECT_NAME}
-                     POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "$<TARGET_FILE:dynamiclib>"
-                     ${CMAKE_SOURCE_DIR}/Plugins)

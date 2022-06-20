@@ -1,3 +1,4 @@
+*.plugin
 Plugins.json
 *.pdb
 *.dll
