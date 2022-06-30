@@ -1,5 +1,5 @@
 # TD-Faust
-TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio Stream) and [TouchDesigner](https://derivative.ca/).
+TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio Stream) and [TouchDesigner](https://derivative.ca/). The latest builds are for TouchDesigner 2022.25370 and newer. Older TD-Faust builds can be found in the [Releases](https://github.com/DBraun/TD-Faust/releases)
 
 ## Overview
  
@@ -76,6 +76,18 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 * Reset: Clear the compiled code, if there is any.
 * Clear MIDI: Clear the MIDI notes (in case something went wrong).
 * Viewer COMP: The [Container COMP](https://docs.derivative.ca/Container_COMP) which will be used when `Compile` is pulsed.
+
+### Python API
+
+The Faust CHOP's Pyton interface is similar to the [Audio VST CHOP](https://docs.derivative.ca/AudiovstCHOP_Class).
+
+* `sendNoteOn(channel: int, note: int, velocity: int, noteOffDelay: float=None, noteOffVelocity: int=None) -> None` (**`noteOffDelay` and `noteOffVelocity` aren't implemented yet**)
+* `sendNoteOff(channel: int, note: int, velocity: int) -> None`
+* `panic() -> None`
+* `sendAllNotesOff(channel: int) -> None`
+* `sendControl(channel: int, ctrl: int, value: int) -> None`
+* `sendPitchBend(channel: int, wheel: int) -> None`
+* `sendProgram(channel: int, pgm: int) -> None`
 
 ### Automatic Custom Parameters and UI
 

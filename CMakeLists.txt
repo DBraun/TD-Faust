@@ -4,7 +4,6 @@ project(TD-Faust VERSION 0.0.1)
 
 set(LLVM_DIR ${LLVM_DIR})
 set(SndFile_DIR ${SndFile_DIR})
-# set(SNDFILE_INCLUDE_DIR ${SndFile_DIR}/include)
 
 include(FaustLib.cmake)
 ## Create Faust
@@ -94,12 +93,31 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler/utils)
 include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
-target_link_libraries(${PROJECT_NAME} dynamiclib)
+target_link_libraries(${PROJECT_NAME} PUBLIC dynamiclib)
 
 include (CMakeFindDependencyMacro)
 
 find_package(SndFile REQUIRED)
-target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
+target_link_libraries(${PROJECT_NAME} PUBLIC SndFile::sndfile)
+
+set(Python_FIND_REGISTRY "LAST")
+set(Python_FIND_STRATEGY "LOCATION")
+find_package(Python 3.9 EXACT REQUIRED COMPONENTS Interpreter Development)
+target_link_libraries(${PROJECT_NAME} PUBLIC Python::Python)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    BUNDLE true
+    BUNDLE_EXTENSION "plugin"
+    # PRODUCT_BUNDLE_IDENTIFIER design.dirt.cpp.${PROJECT_NAME}
+    # MACOSX_BUNDLE_GUI_IDENTIFIER design.dirt.cpp.${PROJECT_NAME}
+    MACOSX_BUNDLE_INFO_STRING ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+    MACOSX_BUNDLE_COPYRIGHT "David Braun"
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/TD-Faust/Info.plist
+    XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "/System/Library/PrivateFrameworks /Library/Frameworks"
+    )
 
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)
@@ -111,18 +129,18 @@ include_directories(${LLVM_INCLUDE_DIRS})
 
 if(WIN32)
   # win sock 32
-  target_link_libraries(${PROJECT_NAME} ws2_32)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32)
   # windows multimedia for rt midi
-  target_link_libraries(${PROJECT_NAME} winmm)
+  target_link_libraries(${PROJECT_NAME} PUBLIC winmm)
 elseif(APPLE)
-  target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
+  target_link_libraries(${PROJECT_NAME} PUBLIC "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
 
 else()
 ## pretend we're building on Linux
 add_library(TD-Faust MODULE "${PROJECT_SOURCE_DIR}/TD-Faust/null.cpp")
 add_dependencies(${PROJECT_NAME} dynamiclib)
-target_link_libraries(${PROJECT_NAME} dynamiclib)
+target_link_libraries(${PROJECT_NAME} PUBLIC dynamiclib)
 
 endif()
 
@@ -216,6 +234,10 @@ if(APPLE)
         POST_BUILD COMMAND
         install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib "$<TARGET_FILE:TD-Faust>"
         )
+    add_custom_command(TARGET ${PROJECT_NAME} 
+                     POST_BUILD
+                     COMMAND install_name_tool -change /Library/Frameworks/Python.framework/Versions/3.9/Python $TOUCHDESIGNER_APP/Contents/Frameworks/Python.framework/Versions/3.9/lib/libpython3.9.dylib "$<TARGET_FILE:TD-Faust>"
+                     )
     add_custom_command(TARGET ${PROJECT_NAME}
                        POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_if_different

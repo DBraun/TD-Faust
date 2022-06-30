@@ -60,9 +60,9 @@ pySendNoteOff(PyObject* self, PyObject* args, void*)
     // while the Python class is still being held on and used elsewhere.
     if (fCHOP)
     {
-        PyObject* oChannel;
-        PyObject* oNote;
-        PyObject* oVelocity;
+        PyObject* oChannel = nullptr;
+        PyObject* oNote = nullptr;
+        PyObject* oVelocity = nullptr;
 
         if (!PyArg_UnpackTuple(args, "ref", 3, 3, &oChannel, &oNote, &oVelocity)) {
             // error
@@ -91,18 +91,22 @@ pySendNoteOn(PyObject* self, PyObject* args, void*)
     // while the Python class is still being held on and used elsewhere.
     if (fCHOP)
     {
-        PyObject* oChannel;
-        PyObject* oNote;
-        PyObject* oVelocity;
-        PyObject* oDelayTime;
-        PyObject* oOffVelocity;
+        PyObject* oChannel = nullptr;
+        PyObject* oNote = nullptr;
+        PyObject* oVelocity = nullptr;
+        PyObject* oDelayTime = nullptr;
+        PyObject* oOffVelocity = nullptr;
         
-        if (!PyArg_UnpackTuple(args, "ref", 5, 5, &oChannel, &oNote, &oVelocity, &oDelayTime, &oOffVelocity)) {
+        if (!PyArg_UnpackTuple(args, "ref", 3, 5, &oChannel, &oNote, &oVelocity, &oDelayTime, &oOffVelocity)) {
             // error
             FAIL_IN_CUSTOM_OPERATOR_METHOD
         }
                 
-        fCHOP->sendNoteOn(_PyLong_AsInt(oChannel), _PyLong_AsInt(oNote), _PyLong_AsInt(oVelocity), PyFloat_AsDouble(oDelayTime), _PyLong_AsInt(oOffVelocity));
+        fCHOP->sendNoteOn(_PyLong_AsInt(oChannel),
+                          _PyLong_AsInt(oNote),
+                          _PyLong_AsInt(oVelocity),
+                          oDelayTime ? PyFloat_AsDouble(oDelayTime) : 0.,
+                          oOffVelocity ? _PyLong_AsInt(oOffVelocity) : 0);
         // Make the node dirty so it will cook an output a newly reset filter when asked next
         me->context->makeNodeDirty();
     }
@@ -124,7 +128,7 @@ pySendAllNotesOff(PyObject* self, PyObject* args, void*)
     // while the Python class is still being held on and used elsewhere.
     if (fCHOP)
     {
-        PyObject* oChannel;
+        PyObject* oChannel = nullptr;
         
         if (!PyArg_UnpackTuple(args, "ref", 1, 1, &oChannel)) {
             // error
@@ -175,8 +179,8 @@ pySendPitchBend(PyObject* self, PyObject* args, void*)
     // while the Python class is still being held on and used elsewhere.
     if (fCHOP)
     {
-        PyObject* oChannel;
-        PyObject* oWheel;
+        PyObject* oChannel = nullptr;
+        PyObject* oWheel = nullptr;
         
         if (!PyArg_UnpackTuple(args, "ref", 2, 2, &oChannel, &oWheel)) {
             // error
@@ -205,8 +209,8 @@ pySendProgChange(PyObject* self, PyObject* args, void*)
     // while the Python class is still being held on and used elsewhere.
     if (fCHOP)
     {
-        PyObject* oChannel;
-        PyObject* oValue;
+        PyObject* oChannel = nullptr;
+        PyObject* oValue = nullptr;
         
         if (!PyArg_UnpackTuple(args, "ref", 2, 2, &oChannel, &oValue)) {
             // error
@@ -235,9 +239,9 @@ pySendControl(PyObject* self, PyObject* args, void*)
     // while the Python class is still being held on and used elsewhere.
     if (fCHOP)
     {
-        PyObject* oChannel;
-        PyObject* oCtrl;
-        PyObject* oValue;
+        PyObject* oChannel = nullptr;
+        PyObject* oCtrl = nullptr;
+        PyObject* oValue = nullptr;
         
         if (!PyArg_UnpackTuple(args, "ref", 3, 3, &oChannel, &oCtrl, &oValue)) {
             // error
@@ -282,7 +286,7 @@ extern "C"
 		// The opType is the unique name for this CHOP. It must start with a 
 		// capital A-Z character, and all the following characters must lower case
 		// or numbers (a-z, 0-9)
-		info->customOPInfo.opType->setString("Faustchop");
+		info->customOPInfo.opType->setString("Faust");
 
 		// The opLabel is the text that will show up in the OP Create Dialog
 		info->customOPInfo.opLabel->setString("Faust CHOP");
@@ -707,6 +711,12 @@ FaustCHOP::execute(CHOP_Output* output,
     if (m_wantReset) {
         clear();
         m_wantReset = false;
+        // write zeros and return
+        for (int chan = 0; chan < output->numChannels; chan++) {
+            auto writePtr = output->channels[chan];
+            memset(writePtr, 0.f, output->numSamples * sizeof(float));
+        }
+        return;
     }
 
 	bool polyEnable = inputs->getParDouble("Polyphony");
@@ -1097,7 +1107,7 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
-	// chuck source code DAT
+	// Faust source code DAT
 	{
 		OP_StringParameter sp;
 
@@ -1207,7 +1217,7 @@ FaustCHOP::pulsePressed(const char* name, void* reserved1)
 void
 FaustCHOP::sendNoteOff(int channel, int note, int velocity) {
     if (m_dsp_poly) {
-        m_dsp_poly->keyOff(channel-1, note, velocity);
+        m_dsp_poly->keyOff(channel, note, velocity);
     }
 }
                
@@ -1216,41 +1226,37 @@ void
 FaustCHOP::sendNoteOn(int channel, int note, int velocity, double noteOffDelay, int noteOffVelocity) {
     // todo: use noteOffDelay
     if (m_dsp_poly) {
-        m_dsp_poly->keyOn(channel-1, note, velocity);
+        m_dsp_poly->keyOn(channel, note, velocity);
     }
 }
 
 void
 FaustCHOP::sendAllNotesOff(int channel) {
     if (m_dsp_poly) {
-        m_dsp_poly->ctrlChange(channel-1, m_dsp_poly->ALL_NOTES_OFF, 0);
+        m_dsp_poly->ctrlChange(channel, m_dsp_poly->ALL_NOTES_OFF, 0);
     }
 }
                
-
 void
 FaustCHOP::panic() {
-    // todo: is this right?
-    for (int i=1; i<17; i++) {
-        sendAllNotesOff(i);
-    }
+    sendAllNotesOff(0);
 }
                
 void
 FaustCHOP::sendPitchBend(int channel, int wheel) {
     if (m_dsp_poly) {
-        m_dsp_poly->pitchWheel(channel-1, wheel);
+        m_dsp_poly->pitchWheel(channel, wheel);
     }
 }
 
 void FaustCHOP::sendProgram(int channel, int pgm) {
     if (m_dsp_poly) {
-        m_dsp_poly->progChange(channel-1, pgm);
+        m_dsp_poly->progChange(channel, pgm);
     }
 }
 
 void FaustCHOP::sendControl(int channel, int ctrl, int value) {
     if (m_dsp_poly) {
-        m_dsp_poly->ctrlChange(channel-1, ctrl, value);
+        m_dsp_poly->ctrlChange(channel, ctrl, value);
     }
 }

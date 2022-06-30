@@ -60,16 +60,9 @@ using namespace TD;
 #define MAX_OUTPUTS 16384
 #endif
 
-#ifdef _WIN32
-    #include <Python.h>
-    #include <structmember.h>
-    #include <unicodeobject.h>
-#else
-    #include <Python/Python.h>
-    #include <Python/structmember.h>
-    #include <Python/unicodeobject.h>
-#endif
-
+#include <Python.h>
+#include <structmember.h>
+#include <unicodeobject.h>
 
 // To get more help about these functions, look at CHOP_CPlusPlusBase.h
 class FaustCHOP : public CHOP_CPlusPlusBase
