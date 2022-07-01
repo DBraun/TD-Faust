@@ -93,17 +93,17 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler/utils)
 include_directories(${TOUCHDESIGNER_INC})
 add_dependencies(${PROJECT_NAME} dynamiclib)
-target_link_libraries(${PROJECT_NAME} PUBLIC dynamiclib)
+target_link_libraries(${PROJECT_NAME} dynamiclib)
 
 include (CMakeFindDependencyMacro)
 
 find_package(SndFile REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC SndFile::sndfile)
+target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
 
 set(Python_FIND_REGISTRY "LAST")
 set(Python_FIND_STRATEGY "LOCATION")
 find_package(Python 3.9 EXACT REQUIRED COMPONENTS Interpreter Development)
-target_link_libraries(${PROJECT_NAME} PUBLIC Python::Python)
+target_link_libraries(${PROJECT_NAME} Python::Python)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     BUNDLE true
@@ -129,18 +129,18 @@ include_directories(${LLVM_INCLUDE_DIRS})
 
 if(WIN32)
   # win sock 32
-  target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32)
+  target_link_libraries(${PROJECT_NAME} ws2_32)
   # windows multimedia for rt midi
-  target_link_libraries(${PROJECT_NAME} PUBLIC winmm)
+  target_link_libraries(${PROJECT_NAME} winmm)
 elseif(APPLE)
-  target_link_libraries(${PROJECT_NAME} PUBLIC "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
+  target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
 
 else()
 ## pretend we're building on Linux
 add_library(TD-Faust MODULE "${PROJECT_SOURCE_DIR}/TD-Faust/null.cpp")
 add_dependencies(${PROJECT_NAME} dynamiclib)
-target_link_libraries(${PROJECT_NAME} PUBLIC dynamiclib)
+target_link_libraries(${PROJECT_NAME} dynamiclib)
 
 endif()
 
