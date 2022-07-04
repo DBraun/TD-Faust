@@ -10,10 +10,10 @@ on:
 jobs:
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-2019]
     steps:
     - uses: actions/checkout@v2
       with:
