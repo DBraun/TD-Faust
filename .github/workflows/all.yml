@@ -19,6 +19,11 @@ jobs:
       with:
         submodules: true
 
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.9"
+
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.0.3
 
@@ -40,7 +45,7 @@ jobs:
     
     - name: Build TD-Faust (Release)
       run: |
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/cmake
+        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/cmake -DPython_ROOT_DIR=$pythonLocation
         msbuild build/TD-Faust.sln /property:Configuration=Release
       env:
         LLVM_DIR: ${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm
