@@ -43,7 +43,7 @@ set(INCLUDE_OSC         OFF CACHE STRING  "Include Faust OSC library"     FORCE)
 set(INCLUDE_HTTP        OFF CACHE STRING  "Include Faust HTTPD library"   FORCE)
 
 ## Hardcoded backends for faust
-## NB: The CPP_BACKEND is necessary for exporting a DSP to XML. 
+## NB: The CPP_BACKEND is necessary for exporting a DSP to XML and/or C++
 set(ASMJS_BACKEND  OFF                       CACHE STRING  "Include ASMJS backend"       FORCE)
 set(C_BACKEND      OFF                       CACHE STRING  "Include C backend"           FORCE)
 set(CPP_BACKEND    DYNAMIC                   CACHE STRING  "Include CPP backend"         FORCE)
@@ -101,8 +101,7 @@ FILE(GLOB llvm_components ${LLVM_DIR}/../../../Release/lib/*.lib)
 # Todo: why does this one need to be excluded?
 list(FILTER llvm_components EXCLUDE REGEX ".*LLVM-C\.lib")
 
-## If you're seeing linker errors, uncomment this message line and 
-## make sure it's printing many paths to .lib files.
+## Make sure it's printing many paths to .lib files.
 message(llvm_components: ${llvm_components})
 string(STRIP "${llvm_components}" llvm_components)
 target_link_libraries(dynamiclib PRIVATE ${llvm_components})

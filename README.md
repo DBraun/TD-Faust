@@ -1,5 +1,5 @@
 # TD-Faust
-TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio Stream) and [TouchDesigner](https://derivative.ca/).
+TD-Faust is an integration of [FAUST](https://faust.grame.fr) (Functional Audio Stream) and [TouchDesigner](https://derivative.ca/). The latest builds are for TouchDesigner 2022.25370 and newer. Older TD-Faust builds can be found in the [Releases](https://github.com/DBraun/TD-Faust/releases)
 
 ## Overview
  
@@ -20,7 +20,7 @@ Demo / Tutorial:
 
 [![Demo Video Screenshot](https://img.youtube.com/vi/r9oTSwU8ahw/0.jpg)](https://www.youtube.com/watch?v=r9oTSwU8ahw "FAUST in TouchDesigner (Audio Coding Demo)")
 
-Examples of projects made with TD-Faust can be found [here](https://github.com/DBraun/TD-Faust/wiki/Made-With-TD-Faust).
+Examples of projects made with TD-Faust can be found [here](https://github.com/DBraun/TD-Faust/wiki/Made-With-TD-Faust). Contributions are welcome!
 
 ## New to FAUST?
 
@@ -36,19 +36,22 @@ Examples of projects made with TD-Faust can be found [here](https://github.com/D
 
 Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, `sndfile.dll`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
+If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. Then you can open a cmd window to this repo's directory and run `call build_windows.bat`.
+
 ### macOS
 
 <!-- Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Copy `libfaust.2.dylib`, `TD-Faust.plugin`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
 If there's a warning about the codesigning certificate, you may need to compile TD-Faust on your own computer. -->
 
-MacOS users need to compile TD-Faust on their own computers due to code-signing issues.
+MacOS users need to compile TD-Faust on their own computers due to code-signing requirements.
 
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
-4. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you have an Apple Silicon CPU, it will build TD-Faust to be compatible with the [Apple Silicon TouchDesigner builds](https://derivative.ca/download/archive). If you want to build for `x86_64` despite this, you can adjust `build_macos.sh`.
-5. Open `TD-Faust.toe`
+4. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/) and confirm it's in your system PATH.
+5. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you have an Apple Silicon CPU, it will build TD-Faust to be compatible with the [Apple Silicon TouchDesigner builds](https://derivative.ca/download/archive). If you want to build for `x86_64` despite this, you can adjust `build_macos.sh`.
+6. Open `TD-Faust.toe`
 
 ## Tutorial
 
@@ -71,8 +74,20 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 * Assets Path: The directory containing your assets such as `.wav` files.
 * Compile: Compile the Faust code.
 * Reset: Clear the compiled code, if there is any.
-* Clear MIDI: Clear the MIDI notes (in case something went wrong).
+* Clear MIDI: Clear the MIDI notes (in case notes are stuck on).
 * Viewer COMP: The [Container COMP](https://docs.derivative.ca/Container_COMP) which will be used when `Compile` is pulsed.
+
+### Python API
+
+The Faust CHOP's Pyton interface is similar to the [Audio VST CHOP](https://docs.derivative.ca/AudiovstCHOP_Class).
+
+* `sendNoteOn(channel: int, note: int, velocity: int, noteOffDelay: float=None, noteOffVelocity: int=None) -> None` (**`noteOffDelay` and `noteOffVelocity` aren't implemented yet**)
+* `sendNoteOff(channel: int, note: int, velocity: int) -> None`
+* `panic() -> None`
+* `sendAllNotesOff(channel: int) -> None`
+* `sendControl(channel: int, ctrl: int, value: int) -> None`
+* `sendPitchBend(channel: int, wheel: int) -> None`
+* `sendProgram(channel: int, pgm: int) -> None`
 
 ### Automatic Custom Parameters and UI
 

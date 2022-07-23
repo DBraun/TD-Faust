@@ -45,6 +45,230 @@ std::list<GUI*> GUI::fGuiList;
 ztimedmap GUI::gTimedZoneMap;
 static int numCompiled = 0;
 
+#define FAIL_IN_CUSTOM_OPERATOR_METHOD Py_INCREF(Py_None);return Py_None;
+
+static PyObject*
+pySendNoteOff(PyObject* self, PyObject* args, void*)
+{
+    PY_Struct* me = (PY_Struct*)self;
+
+    PY_GetInfo info;
+    // We don't want to cook the node before we set this, since it doesn't depend on its current state
+    info.autoCook = false; // todo: which value to use?
+    FaustCHOP* fCHOP = (FaustCHOP*)me->context->getNodeInstance(info);
+    // It's possible the instance will be nullptr, such as if the node has been deleted
+    // while the Python class is still being held on and used elsewhere.
+    if (fCHOP)
+    {
+        PyObject* oChannel = nullptr;
+        PyObject* oNote = nullptr;
+        PyObject* oVelocity = nullptr;
+
+        if (!PyArg_UnpackTuple(args, "ref", 3, 3, &oChannel, &oNote, &oVelocity)) {
+            // error
+            FAIL_IN_CUSTOM_OPERATOR_METHOD
+        }
+                
+        fCHOP->sendNoteOff(_PyLong_AsInt(oChannel), _PyLong_AsInt(oNote), _PyLong_AsInt(oVelocity));
+        // Make the node dirty so it will cook an output a newly reset filter when asked next
+        me->context->makeNodeDirty();
+    }
+
+    // We need to inc-ref the None object if we are going to return it.
+    FAIL_IN_CUSTOM_OPERATOR_METHOD
+}
+
+static PyObject*
+pySendNoteOn(PyObject* self, PyObject* args, void*)
+{
+    PY_Struct* me = (PY_Struct*)self;
+
+    PY_GetInfo info;
+    // We don't want to cook the node before we set this, since it doesn't depend on its current state
+    info.autoCook = false; // todo: which value to use?
+    FaustCHOP* fCHOP = (FaustCHOP*)me->context->getNodeInstance(info);
+    // It's possible the instance will be nullptr, such as if the node has been deleted
+    // while the Python class is still being held on and used elsewhere.
+    if (fCHOP)
+    {
+        PyObject* oChannel = nullptr;
+        PyObject* oNote = nullptr;
+        PyObject* oVelocity = nullptr;
+        PyObject* oDelayTime = nullptr;
+        PyObject* oOffVelocity = nullptr;
+        
+        if (!PyArg_UnpackTuple(args, "ref", 3, 5, &oChannel, &oNote, &oVelocity, &oDelayTime, &oOffVelocity)) {
+            // error
+            FAIL_IN_CUSTOM_OPERATOR_METHOD
+        }
+                
+        fCHOP->sendNoteOn(_PyLong_AsInt(oChannel),
+                          _PyLong_AsInt(oNote),
+                          _PyLong_AsInt(oVelocity),
+                          oDelayTime ? PyFloat_AsDouble(oDelayTime) : 0.,
+                          oOffVelocity ? _PyLong_AsInt(oOffVelocity) : 0);
+        // Make the node dirty so it will cook an output a newly reset filter when asked next
+        me->context->makeNodeDirty();
+    }
+
+    // We need to inc-ref the None object if we are going to return it.
+    FAIL_IN_CUSTOM_OPERATOR_METHOD
+}
+
+static PyObject*
+pySendAllNotesOff(PyObject* self, PyObject* args, void*)
+{
+    PY_Struct* me = (PY_Struct*)self;
+
+    PY_GetInfo info;
+    // We don't want to cook the node before we set this, since it doesn't depend on its current state
+    info.autoCook = false; // todo: which value to use?
+    FaustCHOP* fCHOP = (FaustCHOP*)me->context->getNodeInstance(info);
+    // It's possible the instance will be nullptr, such as if the node has been deleted
+    // while the Python class is still being held on and used elsewhere.
+    if (fCHOP)
+    {
+        PyObject* oChannel = nullptr;
+        
+        if (!PyArg_UnpackTuple(args, "ref", 1, 1, &oChannel)) {
+            // error
+            FAIL_IN_CUSTOM_OPERATOR_METHOD
+        }
+                
+        fCHOP->sendAllNotesOff(_PyLong_AsInt(oChannel));
+        // Make the node dirty so it will cook an output a newly reset filter when asked next
+        me->context->makeNodeDirty();
+    }
+
+    // We need to inc-ref the None object if we are going to return it.
+    FAIL_IN_CUSTOM_OPERATOR_METHOD
+}
+
+static PyObject*
+pyPanic(PyObject* self, PyObject* args, void*)
+{
+    PY_Struct* me = (PY_Struct*)self;
+
+    PY_GetInfo info;
+    // We don't want to cook the node before we set this, since it doesn't depend on its current state
+    info.autoCook = false; // todo: which value to use?
+    FaustCHOP* fCHOP = (FaustCHOP*)me->context->getNodeInstance(info);
+    // It's possible the instance will be nullptr, such as if the node has been deleted
+    // while the Python class is still being held on and used elsewhere.
+    if (fCHOP)
+    {
+        fCHOP->panic();
+        // Make the node dirty so it will cook an output a newly reset filter when asked next
+        me->context->makeNodeDirty();
+    }
+
+    // We need to inc-ref the None object if we are going to return it.
+    FAIL_IN_CUSTOM_OPERATOR_METHOD
+}
+
+static PyObject*
+pySendPitchBend(PyObject* self, PyObject* args, void*)
+{
+    PY_Struct* me = (PY_Struct*)self;
+
+    PY_GetInfo info;
+    // We don't want to cook the node before we set this, since it doesn't depend on its current state
+    info.autoCook = false; // todo: which value to use?
+    FaustCHOP* fCHOP = (FaustCHOP*)me->context->getNodeInstance(info);
+    // It's possible the instance will be nullptr, such as if the node has been deleted
+    // while the Python class is still being held on and used elsewhere.
+    if (fCHOP)
+    {
+        PyObject* oChannel = nullptr;
+        PyObject* oWheel = nullptr;
+        
+        if (!PyArg_UnpackTuple(args, "ref", 2, 2, &oChannel, &oWheel)) {
+            // error
+            FAIL_IN_CUSTOM_OPERATOR_METHOD
+        }
+                
+        fCHOP->sendPitchBend(_PyLong_AsInt(oChannel), _PyLong_AsInt(oWheel));
+        // Make the node dirty so it will cook an output a newly reset filter when asked next
+        me->context->makeNodeDirty();
+    }
+
+    // We need to inc-ref the None object if we are going to return it.
+    FAIL_IN_CUSTOM_OPERATOR_METHOD
+}
+
+static PyObject*
+pySendProgChange(PyObject* self, PyObject* args, void*)
+{
+    PY_Struct* me = (PY_Struct*)self;
+
+    PY_GetInfo info;
+    // We don't want to cook the node before we set this, since it doesn't depend on its current state
+    info.autoCook = false; // todo: which value to use?
+    FaustCHOP* fCHOP = (FaustCHOP*)me->context->getNodeInstance(info);
+    // It's possible the instance will be nullptr, such as if the node has been deleted
+    // while the Python class is still being held on and used elsewhere.
+    if (fCHOP)
+    {
+        PyObject* oChannel = nullptr;
+        PyObject* oValue = nullptr;
+        
+        if (!PyArg_UnpackTuple(args, "ref", 2, 2, &oChannel, &oValue)) {
+            // error
+            FAIL_IN_CUSTOM_OPERATOR_METHOD
+        }
+                
+        fCHOP->sendProgram(_PyLong_AsInt(oChannel), _PyLong_AsInt(oValue));
+        // Make the node dirty so it will cook an output a newly reset filter when asked next
+        me->context->makeNodeDirty();
+    }
+
+    // We need to inc-ref the None object if we are going to return it.
+    FAIL_IN_CUSTOM_OPERATOR_METHOD
+}
+
+static PyObject*
+pySendControl(PyObject* self, PyObject* args, void*)
+{
+    PY_Struct* me = (PY_Struct*)self;
+
+    PY_GetInfo info;
+    // We don't want to cook the node before we set this, since it doesn't depend on its current state
+    info.autoCook = false; // todo: which value to use?
+    FaustCHOP* fCHOP = (FaustCHOP*)me->context->getNodeInstance(info);
+    // It's possible the instance will be nullptr, such as if the node has been deleted
+    // while the Python class is still being held on and used elsewhere.
+    if (fCHOP)
+    {
+        PyObject* oChannel = nullptr;
+        PyObject* oCtrl = nullptr;
+        PyObject* oValue = nullptr;
+        
+        if (!PyArg_UnpackTuple(args, "ref", 3, 3, &oChannel, &oCtrl, &oValue)) {
+            // error
+            FAIL_IN_CUSTOM_OPERATOR_METHOD
+        }
+                
+        fCHOP->sendControl(_PyLong_AsInt(oChannel), _PyLong_AsInt(oCtrl), _PyLong_AsInt(oValue));
+        // Make the node dirty so it will cook an output a newly reset filter when asked next
+        me->context->makeNodeDirty();
+    }
+
+    // We need to inc-ref the None object if we are going to return it.
+    FAIL_IN_CUSTOM_OPERATOR_METHOD
+}
+
+static PyMethodDef methods[] =
+{
+    {"panic", (PyCFunction)pyPanic, METH_VARARGS, "Sends a volume off event for each channel and note off event for each note."},
+    {"sendAllNotesOff", (PyCFunction)pySendAllNotesOff, METH_VARARGS, "Sends a All Notes Off event through the CHOP."},
+    {"sendNoteOff", (PyCFunction)pySendNoteOff, METH_VARARGS, "Send a Note Off MIDI Event."},
+    {"sendNoteOn", (PyCFunction)pySendNoteOn, METH_VARARGS, "Send a Note On MIDI Event."},
+    {"sendPitchBend", (PyCFunction)pySendPitchBend, METH_VARARGS, "Sends a Pitch Bend event through the CHOP. channel - The MIDI event channel. Valid ranges are 1 to 16. value - The pitch bend value. Valid ranges are between 0 and 16384."},
+    {"sendProgram", (PyCFunction)pySendProgChange, METH_VARARGS, "Sends a Program Change event through the CHOP. channel - The MIDI event channel. Valid ranges are 1 to 16. value - The MIDI program change. Valid ranges are 0 to 127."},
+    {"sendControl", (PyCFunction)pySendControl, METH_VARARGS, "Sends a Controller event through the CHOP. channel - The MIDI event channel. Valid ranges are 1 to 16. index - The MIDI controller index. Valid ranges are 0 to 127. value - The MIDI control value. Valid ranges are 0 to 127."},
+    {0}
+};
+
 // These functions are basic C function, which the DLL loader can find
 // much easier than finding a C++ Class.
 // The DLLEXPORT prefix is needed so the compile exports these functions from the .dll
@@ -62,7 +286,7 @@ extern "C"
 		// The opType is the unique name for this CHOP. It must start with a 
 		// capital A-Z character, and all the following characters must lower case
 		// or numbers (a-z, 0-9)
-		info->customOPInfo.opType->setString("Faustchop");
+		info->customOPInfo.opType->setString("Faust");
 
 		// The opLabel is the text that will show up in the OP Create Dialog
 		info->customOPInfo.opLabel->setString("Faust CHOP");
@@ -74,6 +298,10 @@ extern "C"
 
 		info->customOPInfo.minInputs = 0;
 		info->customOPInfo.maxInputs = 3;
+            
+        info->customOPInfo.pythonVersion->setString(PY_VERSION);
+        info->customOPInfo.pythonMethods = methods;
+        //info->customOPInfo.pythonGetSets = getSets; // todo:
 	}
 
 	DLLEXPORT
@@ -479,6 +707,17 @@ FaustCHOP::execute(CHOP_Output* output,
 	void* reserved)
 {
 	myExecuteCount++;
+            
+    if (m_wantReset) {
+        clear();
+        m_wantReset = false;
+        // write zeros and return
+        for (int chan = 0; chan < output->numChannels; chan++) {
+            auto writePtr = output->channels[chan];
+            memset(writePtr, 0.f, output->numSamples * sizeof(float));
+        }
+        return;
+    }
 
 	bool polyEnable = inputs->getParDouble("Polyphony");
 
@@ -702,7 +941,7 @@ FaustCHOP::getInfoCHOPChan(int32_t index,
 	//}
 	else if (index == 1) {
 		chan->name->setString("inputs");
-		chan->value = m_numInputChannels || 0;
+		chan->value = m_numInputChannels;
 	}
 	else if (index == 2) {
 		chan->name->setString("block_size");
@@ -868,7 +1107,7 @@ FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1)
 		assert(res == OP_ParAppendResult::Success);
 	}
 
-	// chuck source code DAT
+	// Faust source code DAT
 	{
 		OP_StringParameter sp;
 
@@ -966,11 +1205,58 @@ FaustCHOP::pulsePressed(const char* name, void* reserved1)
 
 	if (!strcmp(name, "Reset"))
 	{
-		clear();
+        m_wantReset = true;
 	}
 
 	if (!strcmp(name, "Clearmidi"))
 	{
 		clearMIDI();
 	}
+}
+               
+void
+FaustCHOP::sendNoteOff(int channel, int note, int velocity) {
+    if (m_dsp_poly) {
+        m_dsp_poly->keyOff(channel, note, velocity);
+    }
+}
+               
+               
+void
+FaustCHOP::sendNoteOn(int channel, int note, int velocity, double noteOffDelay, int noteOffVelocity) {
+    // todo: use noteOffDelay
+    if (m_dsp_poly) {
+        m_dsp_poly->keyOn(channel, note, velocity);
+    }
+}
+
+void
+FaustCHOP::sendAllNotesOff(int channel) {
+    if (m_dsp_poly) {
+        m_dsp_poly->ctrlChange(channel, m_dsp_poly->ALL_NOTES_OFF, 0);
+    }
+}
+               
+void
+FaustCHOP::panic() {
+    sendAllNotesOff(0);
+}
+               
+void
+FaustCHOP::sendPitchBend(int channel, int wheel) {
+    if (m_dsp_poly) {
+        m_dsp_poly->pitchWheel(channel, wheel);
+    }
+}
+
+void FaustCHOP::sendProgram(int channel, int pgm) {
+    if (m_dsp_poly) {
+        m_dsp_poly->progChange(channel, pgm);
+    }
+}
+
+void FaustCHOP::sendControl(int channel, int ctrl, int value) {
+    if (m_dsp_poly) {
+        m_dsp_poly->ctrlChange(channel, ctrl, value);
+    }
 }

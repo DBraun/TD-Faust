@@ -37,6 +37,8 @@
 
 #include "CPlusPlus_Common.h"
 
+namespace TD
+{
 #pragma pack(push, 8)
 
 class CHOP_CPlusPlusBase;
@@ -48,32 +50,31 @@ class CHOP_CPlusPlusBase;
 // from the samples folder in a newer TouchDesigner installation.
 // You may need to upgrade your plugin code in that case, to match
 // the new API requirements
-const int CHOPCPlusPlusAPIVersion = 8;
+const int CHOPCPlusPlusAPIVersion = 9;
 
-struct CHOP_PluginInfo
+class CHOP_PluginInfo
 {
 public:
-
 	// Must be set to CHOPCPlusPlusAPIVersion in FillCHOPPluginInfo
 	int32_t			apiVersion = 0;
 
 	int32_t			reserved[100];
 
-
 	// Information used to describe this plugin as a custom OP.
 	OP_CustomOPInfo	customOPInfo;
 
-
 	int32_t			reserved2[20];
-
 };
 
 class CHOP_GeneralInfo
 {
 public:
 	// Set this to true if you want the CHOP to cook every frame, even
-	// if none of it's inputs/parameters are changing
-	// DEFAULT: false
+	// if none of it's inputs/parameters are changing.
+	// This is generally useful for cases where the node is outputting to
+	// something external to TouchDesigner, such as a network socket or device.
+	// It ensures the node cooks every if nothing inside the network is using/viewing
+	// the output of this node.
 	// Important:
 	// If the node may not be viewed/used by other nodes in the file,
 	// such as a TCP network output node that isn't viewed in perform mode,
@@ -81,14 +82,14 @@ public:
 	// That will ensure cooking is kick-started for this node.
 	// Note that this fix only works for Custom Operators, not
 	// cases where the .dll is loaded into CPlusPlus CHOP.
-
+	// DEFAULT: false
 	bool			cookEveryFrame;
 
 	// Set this to true if you want the CHOP to cook every frame, but only
 	// if someone asks for it to cook. So if nobody is using the output from
-	// the CHOP, it won't cook. This is difereent from 'cookEveryFrame'
+	// the CHOP, it won't cook. This is different from 'cookEveryFrame'
 	// since that will cause it to cook every frame no matter what.
-
+	// DEFAULT: false
 	bool			cookEveryFrameIfAsked;
 
 	// Set this to true if you will be outputting a timeslice
@@ -104,59 +105,38 @@ public:
 	// If this isn't set then you specify the number of sample in the CHOP using
 	// the getOutputInfo() function
 	// DEFAULT: false
-
 	bool			timeslice;
 
 	// If you are returning 'false' from getOutputInfo, this index will 
 	// specify the CHOP input whos attribues you will match 
 	// (channel names, length, sample rate etc.)
 	// DEFAULT : 0
-
 	int32_t			inputMatchIndex;
-
 
 	int32_t			reserved[20];
 };
-
-
 
 class CHOP_OutputInfo
 {
 public:
-
 	// The number of channels you want to output
-
 	int32_t			numChannels;
 
-
 	// If you arn't outputting a timeslice, specify the number of samples here
-
 	int32_t			numSamples;
-
 
 	// if you arn't outputting a timeslice, specify the start index
 	// of the channels here. This is the 'Start' you see when you
 	// middle click on a CHOP
-
 	uint32_t		startIndex;
-
 
 	// Specify the sample rate of the channel data
 	// DEFAULT : whatever the timeline FPS is ($FPS)
-
 	float			sampleRate;
 
-
 	void*			reserved1;
-
-
 	int32_t			reserved[20];
-
 };
-
-
-
-
 
 class CHOP_Output
 {
@@ -191,12 +171,8 @@ public:
 	// channel
 	float** const	channels;
 
-
-
 	int32_t			reserved[20];
 };
-
-
 
 /***** FUNCTION CALL ORDER DURING INITIALIZATION ******/
 /*
@@ -247,7 +223,6 @@ protected:
 
 public:
 
-
 	// BEGIN PUBLIC INTERFACE
 
 	// Some general settings can be assigned here (if you override it)
@@ -255,7 +230,6 @@ public:
 	getGeneralInfo(CHOP_GeneralInfo*, const OP_Inputs *inputs, void* reserved1)
 	{
 	}
-
 
 	// This function is called so the class can tell the CHOP how many
 	// channels it wants to output, how many samples etc.
@@ -272,7 +246,6 @@ public:
 	{
 		return false;
 	}
-
 
 	// This function will be called after getOutputInfo() asking for
 	// the channel names. It will get called once for each channel name
@@ -424,3 +397,4 @@ static_assert(offsetof(CHOP_Output, names) == 16, "Incorrect Alignment");
 static_assert(offsetof(CHOP_Output, channels) == 24, "Incorrect Alignment");
 static_assert(sizeof(CHOP_Output) == 112, "Incorrect Size");
 #endif
+}; // namespace TD
