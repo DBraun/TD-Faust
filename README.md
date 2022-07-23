@@ -20,7 +20,7 @@ Demo / Tutorial:
 
 [![Demo Video Screenshot](https://img.youtube.com/vi/r9oTSwU8ahw/0.jpg)](https://www.youtube.com/watch?v=r9oTSwU8ahw "FAUST in TouchDesigner (Audio Coding Demo)")
 
-Examples of projects made with TD-Faust can be found [here](https://github.com/DBraun/TD-Faust/wiki/Made-With-TD-Faust).
+Examples of projects made with TD-Faust can be found [here](https://github.com/DBraun/TD-Faust/wiki/Made-With-TD-Faust). Contributions are welcome!
 
 ## New to FAUST?
 
@@ -44,7 +44,7 @@ If you need to compile `TD-Faust.dll` yourself, you should first install [Python
 
 If there's a warning about the codesigning certificate, you may need to compile TD-Faust on your own computer. -->
 
-MacOS users need to compile TD-Faust on their own computers due to code-signing issues.
+MacOS users need to compile TD-Faust on their own computers due to code-signing requirements.
 
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
@@ -74,7 +74,7 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 * Assets Path: The directory containing your assets such as `.wav` files.
 * Compile: Compile the Faust code.
 * Reset: Clear the compiled code, if there is any.
-* Clear MIDI: Clear the MIDI notes (in case something went wrong).
+* Clear MIDI: Clear the MIDI notes (in case notes are stuck on).
 * Viewer COMP: The [Container COMP](https://docs.derivative.ca/Container_COMP) which will be used when `Compile` is pulsed.
 
 ### Python API
