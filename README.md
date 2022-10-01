@@ -1,5 +1,5 @@
 # TD-Faust
-TD-Faust is an integration of [FAUST](https://faust.grame.fr) (**F**unctional **AU**dio **S**tream) and [TouchDesigner](https://derivative.ca/). The latest builds are for TouchDesigner 2022.25370 and newer. Older TD-Faust builds can be found in the [Releases](https://github.com/DBraun/TD-Faust/releases).
+TD-Faust is an integration of [FAUST](https://faust.grame.fr) (**F**unctional **AU**dio **ST**ream) and [TouchDesigner](https://derivative.ca/). The latest builds are for TouchDesigner 2022.25370 and newer. Older TD-Faust builds can be found in the [Releases](https://github.com/DBraun/TD-Faust/releases).
 
 ## Overview
  
