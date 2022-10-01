@@ -4,7 +4,6 @@ project(TD-Faust VERSION 0.0.1)
 
 set(LLVM_DIR ${LLVM_DIR})
 set(SndFile_DIR ${SndFile_DIR})
-# set(SNDFILE_INCLUDE_DIR ${SndFile_DIR}/include)
 
 include(FaustLib.cmake)
 ## Create Faust
@@ -100,6 +99,25 @@ include (CMakeFindDependencyMacro)
 
 find_package(SndFile REQUIRED)
 target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
+
+set(Python_FIND_REGISTRY "LAST")
+set(Python_FIND_STRATEGY "LOCATION")
+find_package(Python 3.9 EXACT REQUIRED COMPONENTS Interpreter Development)
+target_link_libraries(${PROJECT_NAME} Python::Python)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    BUNDLE true
+    BUNDLE_EXTENSION "plugin"
+    # PRODUCT_BUNDLE_IDENTIFIER design.dirt.cpp.${PROJECT_NAME}
+    # MACOSX_BUNDLE_GUI_IDENTIFIER design.dirt.cpp.${PROJECT_NAME}
+    MACOSX_BUNDLE_INFO_STRING ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+    MACOSX_BUNDLE_COPYRIGHT "David Braun"
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/TD-Faust/Info.plist
+    XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "/System/Library/PrivateFrameworks /Library/Frameworks"
+    )
 
 ## Link the Pure Data external with llvm
 find_package(LLVM REQUIRED CONFIG)
@@ -216,6 +234,10 @@ if(APPLE)
         POST_BUILD COMMAND
         install_name_tool -change @rpath/libfaust.2.dylib @loader_path/../../../libfaust.2.dylib "$<TARGET_FILE:TD-Faust>"
         )
+    add_custom_command(TARGET ${PROJECT_NAME} 
+                     POST_BUILD
+                     COMMAND install_name_tool -change /Library/Frameworks/Python.framework/Versions/3.9/Python $TOUCHDESIGNER_APP/Contents/Frameworks/Python.framework/Versions/3.9/lib/libpython3.9.dylib "$<TARGET_FILE:TD-Faust>"
+                     )
     add_custom_command(TARGET ${PROJECT_NAME}
                        POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_if_different

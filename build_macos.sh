@@ -2,6 +2,11 @@
 rm Plugins/libfaust.2.dylib
 rm -r Plugins/TD-Faust.plugin
 
+if [ "$TOUCHDESIGNER_APP" == "" ]; then
+    # a reasonable default in case you forget to set the path to TouchDesigner.
+    export TOUCHDESIGNER_APP=/Applications/TouchDesigner.app
+fi
+
 # if building on Apple Silicon
 if [[ $(uname -m) == 'arm64' ]]; then
     echo "Building for Apple Silicon"
@@ -47,7 +52,6 @@ fi
 
 # Use CMake for TD-Faust
 export LLVM_DIR="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm"
-cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_OSX_ARCHITECTURES=$CMAKE_OSX_ARCHITECTURES -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_PREFIX_PATH=$LLVM_DIR -DSndFile_DIR=thirdparty/libsndfile/build -DLLVM_DIR=$LLVM_DIR
 cmake -Bbuild -DUSE_LLVM_CONFIG=off -G "Xcode" -DCMAKE_OSX_ARCHITECTURES=$CMAKE_OSX_ARCHITECTURES -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_PREFIX_PATH=$LLVM_DIR -DSndFile_DIR=thirdparty/libsndfile/build -DLLVM_DIR=$LLVM_DIR
 
 # Build TD-Faust (Release)
