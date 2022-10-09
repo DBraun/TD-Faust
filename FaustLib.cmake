@@ -44,17 +44,20 @@ set(INCLUDE_HTTP        OFF CACHE STRING  "Include Faust HTTPD library"   FORCE)
 
 ## Hardcoded backends for faust
 ## NB: The CPP_BACKEND is necessary for exporting a DSP to XML and/or C++
-set(ASMJS_BACKEND  OFF                       CACHE STRING  "Include ASMJS backend"       FORCE)
-set(C_BACKEND      OFF                       CACHE STRING  "Include C backend"           FORCE)
+set(C_BACKEND      DYNAMIC                   CACHE STRING  "Include C backend"           FORCE)
 set(CPP_BACKEND    DYNAMIC                   CACHE STRING  "Include CPP backend"         FORCE)
+set(CSHARP_BACKEND DYNAMIC                   CACHE STRING  "Include CSharp backend"      FORCE)
+set(DLANG_BACKEND  DYNAMIC                   CACHE STRING  "Include dlang backend"       FORCE)
 set(FIR_BACKEND    OFF                       CACHE STRING  "Include FIR backend"         FORCE)
 set(INTERP_BACKEND OFF                       CACHE STRING  "Include INTERPRETER backend" FORCE)
-set(JAVA_BACKEND   OFF                       CACHE STRING  "Include JAVA backend"        FORCE)
-set(JS_BACKEND     OFF                       CACHE STRING  "Include JAVASCRIPT backend"  FORCE)
+set(JAVA_BACKEND   DYNAMIC                   CACHE STRING  "Include JAVA backend"        FORCE)
+set(JAX_BACKEND    DYNAMIC                   CACHE STRING  "Include JAX backend"         FORCE)
+set(JULIA_BACKEND  DYNAMIC                   CACHE STRING  "Include Julia backend"       FORCE)
 set(LLVM_BACKEND   COMPILER DYNAMIC          CACHE STRING  "Include LLVM backend"        FORCE)
 set(OLDCPP_BACKEND OFF                       CACHE STRING  "Include old CPP backend"     FORCE)
-set(RUST_BACKEND   OFF                       CACHE STRING  "Include RUST backend"        FORCE)
-set(WASM_BACKEND   OFF                       CACHE STRING  "Include WASM backend"        FORCE)
+set(RUST_BACKEND   DYNAMIC                   CACHE STRING  "Include RUST backend"        FORCE)
+set(SOUL_BACKEND   DYNAMIC                   CACHE STRING  "Include SOUL backend"        FORCE)
+set(WASM_BACKEND   DYNAMIC                   CACHE STRING  "Include WASM backend"        FORCE)
 
 ## Call the faust cmakelist.txt
 add_subdirectory(./thirdparty/faust/build EXCLUDE_FROM_ALL)
