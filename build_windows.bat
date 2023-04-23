@@ -3,15 +3,6 @@ rem rm Plugins/faust.dll
 rem rm Plugins/TD-Faust.dll
 rm build/CMakeCache.txt
 
-rem Build LLVM
-if not exist "thirdparty/llvm-project/llvm/build/" (
-	echo "Building LLVM"
-	cd thirdparty/llvm-project/llvm
-	cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64 -DLLVM_ENABLE_ZLIB=off
-	cmake --build build --config Release
-	cd ../../../
-)
-
 rem Build libsndfile
 if not exist "thirdparty/libsndfile/build" (
     echo "Building Libsndfile."
@@ -23,9 +14,7 @@ if not exist "thirdparty/libsndfile/build" (
 )
 
 rem Use CMake for TD-Faust
-set LLVM_DIR=%cd%/thirdparty/llvm-project/llvm/build/lib/cmake/llvm
-echo "LLVM_DIR is " %LLVM_DIR%
-cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DUSE_LLVM_CONFIG=off -DSndFile_DIR=thirdparty/libsndfile/build
+cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DSndFile_DIR=thirdparty/libsndfile/build -DPYTHONVER="3.9"
 
 rem Build TD-Faust
 cmake --build build --config Release

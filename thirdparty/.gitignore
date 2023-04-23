@@ -1,2 +1,3 @@
 clang+llvm-12.0.0-x86_64-apple-darwin
 libsndfile-1.0.31-win64
+libfaust

@@ -25,24 +25,25 @@ using namespace TD;
 // using namespace std::chrono;
 
 // faust include
-#include "faust/dsp/llvm-dsp.h"
-#include "faust/dsp/poly-interpreter-dsp.h"
-#include "faust/dsp/poly-llvm-dsp.h"
-#include "faust/dsp/proxy-dsp.h"
-#include "faust/gui/FUI.h"
-#include "faust/gui/GUI.h"
-#include "faust/gui/JSONUI.h"
-#include "faust/gui/MidiUI.h"
-#include "faust/gui/SoundUI.h"
-#include "faust/gui/UI.h"
-#include "faust/gui/meta.h"
-#include "generator/libfaust.h"
+#include <faust/dsp/llvm-dsp.h>
+#include <faust/dsp/poly-interpreter-dsp.h>
+#include <faust/dsp/poly-llvm-dsp.h>
+#include <faust/dsp/proxy-dsp.h>
+#include <faust/gui/FUI.h>
+#include <faust/gui/GUI.h>
+#include <faust/gui/JSONUI.h>
+#include <faust/gui/MidiUI.h>
+#include <faust/gui/SoundUI.h>
+#include <faust/gui/UI.h>
+#include <faust/gui/meta.h>
+#include <generator/libfaust.h>
 //#include "faust/gui/httpdUI.h"
 //#include "faust/gui/OSCUI.h"
 //#include "faust/gui/GTKUI.h"
 
 #include "TMutex.h"
-#include "faust/midi/rt-midi.h"
+#include <faust/midi/rt-midi.h>
+
 #include "faustchop_ui.cpp"
 
 #ifndef FAUSTFLOAT

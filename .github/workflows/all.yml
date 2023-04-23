@@ -36,12 +36,6 @@ jobs:
         curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.0.31/libsndfile-1.0.31-win64.zip
         tar -xf libsndfile-1.0.31-win64.zip
         ls -r ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/*
-
-    - name: Build LLVM
-      run: |
-        cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64 -DLLVM_ENABLE_ZLIB=off -DLLVM_OPTIMIZED_TABLEGEN=ON -DLLVM_TARGETS_TO_BUILD="X86;ARM"
-        msbuild build/LLVM.sln /property:Configuration=Release
     
     - name: Build TD-Faust (Release)
       run: |
@@ -108,93 +102,9 @@ jobs:
         name: my-artifact-${{ matrix.name }}
         path: TD-Faust-${{ matrix.name }}.zip
 
-  build-ubuntu:
-    strategy:
-      matrix:
-        include:
-          - name: ubuntu-x86_64
-            theContainer: docker://quay.io/pypa/manylinux2014_x86_64
-            os: ubuntu-latest
-            cmake-options: >-
-              -DCMAKE_BUILD_TYPE=Release
-              -DCMAKE_VERBOSE_MAKEFILE=ON
-            llvm-options: >-
-              -DLLVM_TARGETS_TO_BUILD="X86"
-              -DLLVM_DEFAULT_TARGET_TRIPLE="x86_64-linux-gnu"
-          # - name: ubuntu-aarch64
-          #   theContainer: docker://quay.io/pypa/manylinux2014_aarch64
-          #   os: ubuntu-latest
-          #   cmake-options: >-
-          #     -DCMAKE_BUILD_TYPE=Release
-          #     -DCMAKE_VERBOSE_MAKEFILE=ON
-          #     -DCMAKE_SYSTEM_PROCESSOR=aarch64
-          #     -DCMAKE_FIND_ROOT_PATH=/usr/aarch64-linux-gnu
-          #   llvm-options: >-
-          #     -DLLVM_TARGETS_TO_BUILD="AArch64"
-          #     -DLLVM_DEFAULT_TARGET_TRIPLE="aarch64-linux-gnu"
-
-    runs-on: ubuntu-latest
-    container:
-      image: ${{matrix.theContainer}}
-
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-
-    # - name: Set up QEMU for aarch64 on Linux
-    #   if: runner.os == 'Linux'
-    #   uses: docker/setup-qemu-action@v1
-    #   with:
-    #     platforms: all
-
-    - name: Checkout ncurses
-      uses: actions/checkout@v2
-      with:
-        repository: mirror/ncurses
-        path: ncurses
-
-    - name: ncurses install
-      run: |
-        yum install zip -y
-        cd ncurses
-        ./configure --prefix=/usr/local/ncurses/6_3 --with-shared --with-pkg-config-libdir=/usr/local/ncurses/6_3/lib/pkgconfig --enable-pc-files
-        make
-        make install
-
-    - name: Build libsndfile
-      run: |
-        cd thirdparty/libsndfile
-        cmake -Bbuild -G "Unix Makefiles" ${{matrix.cmake-options}} -DENABLE_EXTERNAL_LIBS=off
-        cmake --build build --config Release
-
-    - name: Build LLVM
-      run: |
-        cd thirdparty/llvm-project/llvm
-        cmake -Bbuild -DCMAKE_INSTALL_PREFIX="./llvm" ${{matrix.cmake-options}} ${{matrix.llvm-options}} -DLLVM_ENABLE_ZLIB=off -DLLVM_OPTIMIZED_TABLEGEN=ON
-        cmake --build build --config Release
-
-    - name: Use CMake for TD-Faust
-      run: |
-        cmake -Bbuild ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
-        cmake -Bbuild ${{matrix.cmake-options}} -DUSE_LLVM_CONFIG=off -DCMAKE_PREFIX_PATH="$PWD/thirdparty/llvm-project/llvm/build/lib/cmake/llvm;/usr/local/ncurses/6_3/lib/pkgconfig" -DSndFile_DIR=$PWD/thirdparty/libsndfile/build -DCURSES_LIBRARY=/usr/local/ncurses/6_3/lib -DCURSES_INCLUDE_PATH=/usr/local/ncurses/6_3/include/ncurses
-        cmake --build build --config Release
-
-    - name: Make distribution
-      run: |
-        mkdir TD-Faust_dist
-        cp -v -r thirdparty/faust/build/lib TD-Faust_dist
-        zip -r TD-Faust-${{ matrix.name }}.zip TD-Faust_dist
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: my-artifact-${{ matrix.name }}
-        path: TD-Faust-${{ matrix.name }}.zip
-
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-windows, build-macos, build-ubuntu]
+    needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
     name: "Create Release on GitHub"
     steps:
