@@ -3,6 +3,8 @@ rem rm Plugins/faust.dll
 rem rm Plugins/TD-Faust.dll
 rm build/CMakeCache.txt
 
+rem Faust-2.58.18-win64.exe /S /D=%cd%\libfaust\windows-x86_64
+
 rem Build libsndfile
 if not exist "thirdparty/libsndfile/build" (
     echo "Building Libsndfile."

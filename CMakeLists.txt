@@ -64,7 +64,7 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/libfaust/include)
 if(APPLE)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/thirdparty/libfaust/lib/libfaustwithllvm.a)
 elseif(MSVC)
-target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/thirdparty/libfaust/lib/libfaustwithllvm.lib)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/thirdparty/libfaust/windows-x86_64/lib/libfaustwithllvm.lib)
 endif()
 
 # Link against sndfile
@@ -83,7 +83,7 @@ if(APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 elseif(MSVC)
     # win sock 32; windows multimedia for rt midi
-    target_link_libraries(${PROJECT_NAME} winmmm ws2_32)
+    target_link_libraries(${PROJECT_NAME} winmm ws2_32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "WIN32;_WIN32;_WINDOWS;__WINDOWS_DS__;")
 endif()
 

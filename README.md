@@ -34,9 +34,9 @@ Examples of projects made with TD-Faust can be found [here](https://github.com/D
 
 ### Windows
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, `sndfile.dll`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `TD-Faust.dll` and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
-If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. Then you can open a cmd window to this repo's directory and run `call build_windows.bat`.
+If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then you can open a cmd window to this repo's directory and run `call build_windows.bat`.
 
 ### macOS
 
@@ -79,7 +79,7 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 
 ### Python API
 
-The Faust CHOP's Pyton interface is similar to the [Audio VST CHOP](https://docs.derivative.ca/AudiovstCHOP_Class).
+The Faust CHOP's Python interface is similar to the [Audio VST CHOP](https://docs.derivative.ca/AudiovstCHOP_Class).
 
 * `sendNoteOn(channel: int, note: int, velocity: int, noteOffDelay: float=None, noteOffVelocity: int=None) -> None` (**`noteOffDelay` and `noteOffVelocity` aren't used yet**)
 * `sendNoteOff(channel: int, note: int, velocity: int) -> None`
@@ -153,6 +153,5 @@ Now drag `FAUST.tox` into your new TouchDesigner project, probably near the root
 TD-Faust (GPL-Licensed) relies on these projects/softwares:
 
 * FAUST ([GPL](https://github.com/grame-cncm/faust/blob/master/COPYING.txt)-licensed).
-* [pd-faustgen](https://github.com/CICM/pd-faustgen) (MIT-Licensed) provided helpful CMake examples.
 * [FaucK](https://github.com/ccrma/chugins/tree/main/Faust) (MIT-Licensed), an integration of FAUST and [ChucK](http://chuck.stanford.edu/).
-* [TouchDesigner](https://derivative.ca/)
+* [TouchDesigner](https://derivative.ca/) [License](https://derivative.ca/end-user-license-agreement-eula)
