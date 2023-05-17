@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 
-set(VERSION 0.2.0)
+set(VERSION 0.4.0)
 project(TD-Faust VERSION ${VERSION})
 
 set(SndFile_DIR ${SndFile_DIR})
