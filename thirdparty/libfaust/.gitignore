@@ -1,0 +1,5 @@
+win64*
+darwin*
+ubuntu*
+*.dmg
+*.exe

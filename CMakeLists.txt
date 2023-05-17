@@ -59,31 +59,48 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/compiler/utils)
 include_directories(${TOUCHDESIGNER_INC})
 
-# Link TD-Faust against faustlib
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/libfaust/include)
-if(APPLE)
-target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/thirdparty/libfaust/lib/libfaustwithllvm.a)
-elseif(MSVC)
-target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/thirdparty/libfaust/windows-x86_64/lib/libfaustwithllvm.lib)
+# Link libfaust based on platform
+target_link_directories(${PROJECT_NAME} PRIVATE ${LIBFAUST_DIR}/lib)
+if(MSVC)
+target_link_libraries(${PROJECT_NAME} PRIVATE libfaustwithllvm.lib)
+else()
+target_link_libraries(${PROJECT_NAME} PRIVATE libfaustwithllvm.a)
 endif()
 
-# Link against sndfile
-find_package(SndFile REQUIRED)
-target_link_libraries(${PROJECT_NAME} SndFile::sndfile)
+# Find sndfile and link it
+if (MSVC)
+    find_package(SndFile REQUIRED HINTS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-1.2.0-win64/cmake")
+    target_link_libraries(${PROJECT_NAME} PRIVATE SndFile::sndfile)
+else()
+    find_package(PkgConfig REQUIRED)
+    # We expect the user to have used brew to install the dependencies
+    # for libsndfile, to have built libsndfile as a static lib,
+    # and for it to be accessible via `pkg-config --static libsndfile`.
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+    list(APPEND PKG_CONFIG_EXECUTABLE "--static")  # append temporarily
+    pkg_check_modules(SNDFILE REQUIRED IMPORTED_TARGET sndfile)
+    pkg_check_modules(FLAC REQUIRED IMPORTED_TARGET flac)
+    pkg_check_modules(VORBIS REQUIRED IMPORTED_TARGET vorbis)
+    pkg_check_modules(OGG REQUIRED IMPORTED_TARGET ogg)
+    pkg_check_modules(OPUS REQUIRED IMPORTED_TARGET opus)
+    pkg_check_modules(MPG123 REQUIRED IMPORTED_TARGET libmpg123)
+    list(POP_BACK PKG_CONFIG_EXECUTABLE)  # undo the append above
+    target_link_libraries (${PROJECT_NAME} PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123)
+endif()
 
 # Link against Python
 set(Python_FIND_REGISTRY "LAST")
 set(Python_FIND_STRATEGY "LOCATION")
 find_package(Python ${PYTHONVER} EXACT REQUIRED COMPONENTS Interpreter Development)
-target_link_libraries(${PROJECT_NAME} Python::Python)
+target_link_libraries(${PROJECT_NAME} PRIVATE Python::Python)
 
 # Platform-specific libraries and definitions
 if(APPLE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "__APPLE__")
-    target_link_libraries(${PROJECT_NAME} "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
+    target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 elseif(MSVC)
     # win sock 32; windows multimedia for rt midi
-    target_link_libraries(${PROJECT_NAME} winmm ws2_32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE winmm ws2_32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "WIN32;_WIN32;_WINDOWS;__WINDOWS_DS__;")
 endif()
 

@@ -36,7 +36,7 @@ Examples of projects made with TD-Faust can be found [here](https://github.com/D
 
 Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `TD-Faust.dll` and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
-If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then you can open a cmd window to this repo's directory and run `call build_windows.bat`.
+If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then open a cmd window to `thirdparty/libsndfile` and run `call download_libfaust.bat`. Then you can open a cmd window to this repo's root directory and run `call build_windows.bat`.
 
 ### macOS
 
@@ -50,8 +50,10 @@ MacOS users need to compile TD-Faust on their own computers due to code-signing 
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
 4. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/) and confirm it's in your system PATH.
-5. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you have an Apple Silicon CPU, it will build TD-Faust to be compatible with the [Apple Silicon TouchDesigner builds](https://derivative.ca/download/archive). If you want to build for `x86_64` despite this, you can adjust `build_macos.sh`.
-6. Open `TD-Faust.toe`
+5. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
+6. In a Terminal window, navigate to `thirdparty/libsndfile` and run `sh download_libfaust.sh`.
+7. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`.
+8. Open `TD-Faust.toe`
 
 ## Tutorial
 

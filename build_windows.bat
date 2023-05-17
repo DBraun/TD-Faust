@@ -1,24 +1,33 @@
+@echo off
+setlocal enabledelayedexpansion
+
 rem Remove any old plugins
-rem rm Plugins/faust.dll
+rem rm Plugins/sndfile.dll
 rem rm Plugins/TD-Faust.dll
 rm build/CMakeCache.txt
 
-rem Faust-2.58.18-win64.exe /S /D=%cd%\libfaust\windows-x86_64
+if "%PYTHONVER%"=="" (
+    set PYTHONVER=3.9
+)
+echo "Using Python version: %PYTHONVER%"
 
-rem Build libsndfile
-if not exist "thirdparty/libsndfile/build" (
-    echo "Building Libsndfile."
-    cd thirdparty/libsndfile
-    cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DBUILD_SHARED_LIBS=ON
-    cmake --build build --config Release
-    cp build/Release/sndfile.dll ../../Plugins/sndfile.dll
-    cd ../..
+rem Download libsndfile
+if not exist "thirdparty/libsndfile-1.2.0-win64/" (
+    echo "Downloading libsndfile..." 
+    cd thirdparty
+    curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.2.0/libsndfile-1.2.0-win64.zip
+    7z x libsndfile-1.2.0-win64.zip -y
+    rm libsndfile-1.2.0-win64.zip
+    echo "Downloaded libsndfile." 
+    cd ..
 )
 
 rem Use CMake for TD-Faust
-cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DSndFile_DIR=thirdparty/libsndfile/build -DPYTHONVER="3.9"
+cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DLIBFAUST_DIR="thirdparty/libfaust/win64/Release" -DSndFile_DIR=thirdparty/libsndfile/build -DPYTHONVER=%PYTHONVER%
 
 rem Build TD-Faust
 cmake --build build --config Release
+
+cp "thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll" "Plugins/sndfile.dll"
 
 echo "All Done!"

@@ -10,10 +10,11 @@ on:
 jobs:
 
   build-windows:
-    runs-on: windows-2019
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019]
+        include:
+        - { os: "windows-2022", python-version: "3.9", python-major: "39"}
     steps:
     - uses: actions/checkout@v2
       with:
@@ -22,34 +23,30 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
-        python-version: "3.9"
+        python-version: ${{ matrix.python-version }}
 
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.3
+      uses: microsoft/setup-msbuild@v1.1
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
 
-    - name: Download libsndfile
+    - name: Download Libfaust
       run: |
-        cd thirdparty
-        curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.0.31/libsndfile-1.0.31-win64.zip
-        tar -xf libsndfile-1.0.31-win64.zip
-        ls -r ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/*
+        cd thirdparty/libfaust
+        call download_libfaust.bat
     
-    - name: Build TD-Faust (Release)
+    - name: Build TD-Faust
       run: |
-        cmake -Bbuild -DUSE_LLVM_CONFIG=off -DSndFile_DIR=${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/cmake -DPython_ROOT_DIR=$pythonLocation
-        msbuild build/TD-Faust.sln /property:Configuration=Release
+        call build_windows.bat
       env:
-        LLVM_DIR: ${{ github.workspace }}/thirdparty/llvm-project/llvm/build/lib/cmake/llvm
+        PYTHONVER: ${{ matrix.python-version}}
 
     - name: Make distribution
       run: |
         mkdir TD-Faust_dist
         move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
-        move ${{ github.workspace }}/Plugins/faust.dll TD-Faust_dist
-        cp ${{ github.workspace }}/thirdparty/libsndfile-1.0.31-win64/bin/sndfile.dll TD-Faust_dist
+        move ${{ github.workspace }}/Plugins/sndfile.dll TD-Faust_dist
         cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
         Remove-Item -Recurse -Force "TD-Faust_dist/faustlibraries/.git"
         7z a TD-Faust-${{ matrix.os }}.zip ./TD-Faust_dist/* -r
@@ -57,54 +54,55 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: my-artifact-${{ matrix.os }}
+        name: TD-Faust-${{ matrix.os }}-Python${{ matrix.python-major }}
         path: TD-Faust-${{ matrix.os }}.zip
 
-  build-macos:
-    strategy:
-      matrix:
-        include:
-          - name: macos-x86_64
-            os: macos-latest
+  # build-macos:
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - name: macos-x86_64
+  #           os: macos-latest
 
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
+  #   runs-on: macos-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #     with:
+  #       submodules: true
 
-    - name: Setup Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
+  #   - name: Setup Python 3.8
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: '3.8'
 
-    - name: Setup Python 3.9
-      run: |
-        pip install --upgrade certifi
-        cd install_script
-        python macos_install_python.py
+  #   - name: Setup Python 3.9
+  #     run: |
+  #       pip install --upgrade certifi
+  #       cd install_script
+  #       python macos_install_python.py
 
-    - name: Build Everything
-      run: |
-        export PATH=/Library/Frameworks/Python.framework/Versions/3.9:/Library/Frameworks/Python.framework/Versions/3.9/bin:/Library/Frameworks/Python.framework/Versions/3.9/lib:$PATH
-        which python3
-        python3 --version
-        sh -v build_macos.sh
+  #   - name: Build Everything
+  #     run: |
+  #       export PATH=/Library/Frameworks/Python.framework/Versions/3.9:/Library/Frameworks/Python.framework/Versions/3.9/bin:/Library/Frameworks/Python.framework/Versions/3.9/lib:$PATH
+  #       which python3
+  #       python3 --version
+  #       sh -v build_macos.sh
 
-    - name: Make distribution
-      run: |
-        rm -rf Plugins/faustlibraries/.git
-        zip -r TD-Faust-${{ matrix.name }}.zip Plugins
+  #   - name: Make distribution
+  #     run: |
+  #       rm -rf Plugins/faustlibraries/.git
+  #       zip -r TD-Faust-${{ matrix.name }}.zip Plugins
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: my-artifact-${{ matrix.name }}
-        path: TD-Faust-${{ matrix.name }}.zip
+  #   - name: Upload artifact
+  #     uses: actions/upload-artifact@v2
+  #     with:
+  #       name: my-artifact-${{ matrix.name }}
+  #       path: TD-Faust-${{ matrix.name }}.zip
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-windows, build-macos]
+    # needs: [build-windows, build-macos]
+    needs: [build-windows]
     runs-on: ubuntu-latest
     name: "Create Release on GitHub"
     steps:
