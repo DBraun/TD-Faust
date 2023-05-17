@@ -32,11 +32,13 @@ jobs:
       uses: lukka/get-cmake@latest
 
     - name: Download Libfaust
+      shell: cmd
       run: |
         cd thirdparty/libfaust
         call download_libfaust.bat
     
     - name: Build TD-Faust
+      shell: cmd
       run: |
         call build_windows.bat
       env:
