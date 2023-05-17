@@ -1,33 +1,33 @@
+@echo off
+setlocal enabledelayedexpansion
+
 rem Remove any old plugins
-rem rm Plugins/faust.dll
+rem rm Plugins/sndfile.dll
 rem rm Plugins/TD-Faust.dll
 rm build/CMakeCache.txt
 
-rem Build LLVM
-if not exist "thirdparty/llvm-project/llvm/build/" (
-	echo "Building LLVM"
-	cd thirdparty/llvm-project/llvm
-	cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64 -DLLVM_ENABLE_ZLIB=off
-	cmake --build build --config Release
-	cd ../../../
+if "%PYTHONVER%"=="" (
+    set PYTHONVER=3.9
 )
+echo "Using Python version: %PYTHONVER%"
 
-rem Build libsndfile
-if not exist "thirdparty/libsndfile/build" (
-    echo "Building Libsndfile."
-    cd thirdparty/libsndfile
-    cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DBUILD_SHARED_LIBS=ON
-    cmake --build build --config Release
-    cp build/Release/sndfile.dll ../../Plugins/sndfile.dll
-    cd ../..
+rem Download libsndfile
+if not exist "thirdparty/libsndfile-1.2.0-win64/" (
+    echo "Downloading libsndfile..." 
+    cd thirdparty
+    curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.2.0/libsndfile-1.2.0-win64.zip
+    7z x libsndfile-1.2.0-win64.zip -y
+    rm libsndfile-1.2.0-win64.zip
+    echo "Downloaded libsndfile." 
+    cd ..
 )
 
 rem Use CMake for TD-Faust
-set LLVM_DIR=%cd%/thirdparty/llvm-project/llvm/build/lib/cmake/llvm
-echo "LLVM_DIR is " %LLVM_DIR%
-cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DUSE_LLVM_CONFIG=off -DSndFile_DIR=thirdparty/libsndfile/build
+cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DLIBFAUST_DIR="thirdparty/libfaust/win64/Release" -DSndFile_DIR=thirdparty/libsndfile/build -DPYTHONVER=%PYTHONVER%
 
 rem Build TD-Faust
 cmake --build build --config Release
+
+cp "thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll" "Plugins/sndfile.dll"
 
 echo "All Done!"

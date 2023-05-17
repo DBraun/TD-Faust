@@ -33,7 +33,7 @@ https://github.com/ccrma/chugins/tree/main/Faust which is MIT-Licensed.
 #include <vector>
 using namespace std;
 
-#include "faust/midi/RtMidi.cpp"
+#include <faust/midi/RtMidi.cpp>
 
 #ifndef SAFE_DELETE
 #define SAFE_DELETE(x) \
@@ -645,9 +645,7 @@ bool FaustCHOP::eval(const string& code) {
   std::vector<std::string> include_pathnames;
 
   delete m_json_ui;
-  m_json_ui = new JSONUI(m_name_app, "", inputs, outputs, (int)m_srate, "", "",
-                         "", "", library_list, include_pathnames, -1,
-                         PathTableType(), MemoryLayoutType());
+  m_json_ui = new JSONUI(m_name_app, "", inputs, outputs);
   theDsp->buildUserInterface(m_json_ui);
 
   std::filesystem::create_directory("./dsp_output");

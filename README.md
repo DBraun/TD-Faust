@@ -34,9 +34,9 @@ Examples of projects made with TD-Faust can be found [here](https://github.com/D
 
 ### Windows
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `faust.dll`, `TD-Faust.dll`, `sndfile.dll`, and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `TD-Faust.dll` and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
-If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. Then you can open a cmd window to this repo's directory and run `call build_windows.bat`.
+If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then open a cmd window to `thirdparty/libsndfile` and run `call download_libfaust.bat`. Then you can open a cmd window to this repo's root directory and run `call build_windows.bat`.
 
 ### macOS
 
@@ -44,14 +44,16 @@ If you need to compile `TD-Faust.dll` yourself, you should first install [Python
 
 If there's a warning about the codesigning certificate, you may need to compile TD-Faust on your own computer. -->
 
-MacOS users need to compile TD-Faust on their own computers due to code-signing requirements.
+TD-Faust is designed for macOS version 11.0 and later. Also, macOS users need to compile TD-Faust on their own computers because [@DBraun](https://github.com/DBraun/) doesn't have an App Distribution license.
 
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
 4. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/) and confirm it's in your system PATH.
-5. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`. If you have an Apple Silicon CPU, it will build TD-Faust to be compatible with the [Apple Silicon TouchDesigner builds](https://derivative.ca/download/archive). If you want to build for `x86_64` despite this, you can adjust `build_macos.sh`.
-6. Open `TD-Faust.toe`
+5. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
+6. In a Terminal window, navigate to `thirdparty/libsndfile` and run `sh download_libfaust.sh`.
+7. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`.
+8. Open `TD-Faust.toe`
 
 ## Tutorial
 
@@ -79,7 +81,7 @@ You don't need to `import("stdfaust.lib");` in the FAUST dsp code. This line is 
 
 ### Python API
 
-The Faust CHOP's Pyton interface is similar to the [Audio VST CHOP](https://docs.derivative.ca/AudiovstCHOP_Class).
+The Faust CHOP's Python interface is similar to the [Audio VST CHOP](https://docs.derivative.ca/AudiovstCHOP_Class).
 
 * `sendNoteOn(channel: int, note: int, velocity: int, noteOffDelay: float=None, noteOffVelocity: int=None) -> None` (**`noteOffDelay` and `noteOffVelocity` aren't used yet**)
 * `sendNoteOff(channel: int, note: int, velocity: int) -> None`
@@ -153,6 +155,5 @@ Now drag `FAUST.tox` into your new TouchDesigner project, probably near the root
 TD-Faust (GPL-Licensed) relies on these projects/softwares:
 
 * FAUST ([GPL](https://github.com/grame-cncm/faust/blob/master/COPYING.txt)-licensed).
-* [pd-faustgen](https://github.com/CICM/pd-faustgen) (MIT-Licensed) provided helpful CMake examples.
 * [FaucK](https://github.com/ccrma/chugins/tree/main/Faust) (MIT-Licensed), an integration of FAUST and [ChucK](http://chuck.stanford.edu/).
-* [TouchDesigner](https://derivative.ca/)
+* [TouchDesigner](https://derivative.ca/) [License](https://derivative.ca/end-user-license-agreement-eula)
