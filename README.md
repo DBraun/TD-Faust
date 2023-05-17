@@ -44,7 +44,7 @@ If you need to compile `TD-Faust.dll` yourself, you should first install [Python
 
 If there's a warning about the codesigning certificate, you may need to compile TD-Faust on your own computer. -->
 
-MacOS users need to compile TD-Faust on their own computers due to code-signing requirements.
+TD-Faust is designed for macOS version 11.0 and later. Also, macOS users need to compile TD-Faust on their own computers because [@DBraun](https://github.com/DBraun/) doesn't have an App Distribution license.
 
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
