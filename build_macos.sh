@@ -8,7 +8,7 @@ fi
 
 if [ "$PYTHONVER" == "" ]; then
     # Guess which Python version TD uses.
-    export PYTHONVER=3.11
+    export PYTHONVER=3.9
 fi
 
 export CMAKE_OSX_DEPLOYMENT_TARGET=11.0
