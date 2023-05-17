@@ -113,19 +113,14 @@ endif()
 if(APPLE)
     # Make two attempts to fix the python location because different users will have Python installed
     # in different locations. We need the python location to point to TouchDesigner's version.
-    add_custom_command(TARGET ${PROJECT_NAME} 
-                     POST_BUILD
-                     COMMAND install_name_tool -change /Library/Frameworks/Python.framework/Versions/${PYTHONVER}/Python $TOUCHDESIGNER_APP/Contents/Frameworks/Python.framework/Versions/${PYTHONVER}/lib/libpython${PYTHONVER}.dylib "$<TARGET_FILE:TD-Faust>"
-                     )
-    add_custom_command(TARGET ${PROJECT_NAME} 
-                     POST_BUILD
-                     COMMAND install_name_tool -change @rpath/Python3.framework/Versions/${PYTHONVER}/Python3 $TOUCHDESIGNER_APP/Contents/Frameworks/Python.framework/Versions/${PYTHONVER}/lib/libpython${PYTHONVER}.dylib "$<TARGET_FILE:TD-Faust>"
-                     )
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
+        install_name_tool -change /Library/Frameworks/Python.framework/Versions/${PYTHONVER}/Python $TOUCHDESIGNER_APP/Contents/Frameworks/Python.framework/Versions/${PYTHONVER}/lib/libpython${PYTHONVER}.dylib "$<TARGET_FILE:TD-Faust>"
+        )
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
+        install_name_tool -change @rpath/Python3.framework/Versions/${PYTHONVER}/Python3 $TOUCHDESIGNER_APP/Contents/Frameworks/Python.framework/Versions/${PYTHONVER}/lib/libpython${PYTHONVER}.dylib "$<TARGET_FILE:TD-Faust>"
+        )
 else()
-    add_custom_command(TARGET ${PROJECT_NAME}
-                       POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                       "$<TARGET_FILE:TD-Faust>"
-                       ${CMAKE_SOURCE_DIR}/Plugins
-                       )
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
+        ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:TD-Faust>" ${CMAKE_SOURCE_DIR}/Plugins
+        )
 endif()
