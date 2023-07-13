@@ -733,7 +733,7 @@ void FaustCHOP::execute(CHOP_Output* output, const OP_Inputs* inputs,
     return;
   }
 
-  bool polyEnable = inputs->getParDouble("Polyphony");
+  bool polyEnable = inputs->getParInt("Polyphony");
 
   inputs->enablePar("Nvoices", polyEnable);
   inputs->enablePar("Groupvoices", polyEnable);
@@ -758,8 +758,8 @@ void FaustCHOP::execute(CHOP_Output* output, const OP_Inputs* inputs,
     m_groupVoices = inputs->getParInt("Groupvoices");
     m_dynamicVoices = inputs->getParInt("Dynamicvoices");
 
-    m_midi_enable = inputs->getParDouble("Midi");
-    m_midi_virtual = inputs->getParDouble("Midiinvirtual");
+    m_midi_enable = inputs->getParInt("Midi");
+    m_midi_virtual = inputs->getParInt("Midiinvirtual");
     m_midi_virtual_name = inputs->getParString("Midiinvirtualname");
 
     const OP_DATInput* dat = inputs->getParDAT("Code");
@@ -1034,7 +1034,6 @@ void FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1) {
 
     np.name = "Polyphony";
     np.label = "Polyphony";
-    np.defaultValues[0] = 0.;
 
     OP_ParAppendResult res = manager->appendToggle(np);
     assert(res == OP_ParAppendResult::Success);
@@ -1063,7 +1062,7 @@ void FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1) {
 
     np.name = "Groupvoices";
     np.label = "Group Voices";
-    np.defaultValues[0] = 1.;
+    np.defaultValues[0] = true;
 
     OP_ParAppendResult res = manager->appendToggle(np);
     assert(res == OP_ParAppendResult::Success);
@@ -1075,7 +1074,7 @@ void FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1) {
 
     np.name = "Dynamicvoices";
     np.label = "Dynamic Voices";
-    np.defaultValues[0] = 1.;
+    np.defaultValues[0] = true;
 
     OP_ParAppendResult res = manager->appendToggle(np);
     assert(res == OP_ParAppendResult::Success);
@@ -1087,7 +1086,6 @@ void FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1) {
 
     np.name = "Midi";
     np.label = "MIDI";
-    np.defaultValues[0] = 0.;
 
     OP_ParAppendResult res = manager->appendToggle(np);
     assert(res == OP_ParAppendResult::Success);
@@ -1099,7 +1097,6 @@ void FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1) {
 
     np.name = "Midiinvirtual";
     np.label = "MIDI In Virtual";
-    np.defaultValues[0] = 0.;
 
     OP_ParAppendResult res = manager->appendToggle(np);
     assert(res == OP_ParAppendResult::Success);

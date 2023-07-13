@@ -27,10 +27,8 @@ stays the same, otherwise changes won't be backwards compatible
 	#define NOMINMAX
 	#include <windows.h>
 	#include <stdint.h>
-	#include "GL_Extensions.h"
 	#define DLLEXPORT __declspec (dllexport)
 #else
-	#include <OpenGL/gltypes.h>
 	#define DLLEXPORT
 #endif
 
@@ -104,10 +102,6 @@ enum class OP_PixelFormat : int32_t
 	MonoA16Fixed,
 	MonoA16Float,
 	MonoA32Float,
-
-	// RGBX, Alpha channel is ignored, will be treated a 1.0 for operations.
-	RGBX16Float = 500,
-	RGBX32Float,
 
 	// sRGB. use SBGRA if possible since that's what most GPUs use
 	SBGRA8Fixed = 600,
@@ -378,12 +372,14 @@ public:
 	// The python documentation string for the class
 	const char*		pythonDoc = nullptr;
 
-	// If you want this node to have a Callback DAT parameter and feature that allows
-	// your custom OP to call python callbacks the end-users fill in
+	// If you want this node to have a Callback DAT parameter and
+	// your custom OP to be able call python callbacks the end-users fill in,
 	// then fill in the stub code for the DAT here.
-	// This will cause a Callbacks DAT parameter to be added to the first page of your node's parameters.
-	// This should be setup with empty/stub functions along with comments, similar to the way other
-	// Callback DATs are pre-filled in other nodes in TouchDesigner.
+	// This will cause a Callbacks DAT parameter to be added to the first page of
+	// your node's parameters.
+	// This should be setup with empty/stub functions along with comments, 
+	// similar to the way other Callback DATs are pre-filled in other nodes in TouchDesigner.
+	// Note: This only works when the .dll is installed as a Custom OP, not as a C++ OP.
 	const char*		pythonCallbacksDAT = nullptr;
 
 	int32_t			reserved[88];
@@ -1220,9 +1216,8 @@ public:
 		intData = nullptr;
 	}
 
-	const float*		floatData;
-	const int32_t*		intData;
-
+	float*			floatData;
+	int32_t*		intData;
 };
 
 // SOP_PrimitiveInfo, all the required data for each primitive
