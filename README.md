@@ -50,7 +50,7 @@ TD-Faust is designed for macOS version 11.0 and later. Also, macOS users need to
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
-4. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/). Confirm it's in your system PATH (`where python3` in Terminal should indicate `/Library/Frameworks/Python.framework/Versions/3.11/bin/python3`).
+4. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/). Confirm it's in your system PATH (`where python3` in Terminal should indicate `/Library/Frameworks/Python.framework/Versions/3.9/bin/python3`).
 5. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
 6. In a Terminal window, navigate to `thirdparty/libfaust` and run `sh download_libfaust.sh`.
 7. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`.
