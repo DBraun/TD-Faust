@@ -28,7 +28,7 @@ cmake --build build --target install
 cd ../..
 
 # Use CMake for TD-Faust
-cmake -Bbuild -G "Xcode" -DCMAKE_OSX_DEPLOYMENT_TARGET=$CMAKE_OSX_DEPLOYMENT_TARGET -DLIBFAUST_DIR="$LIBFAUST_DIR" -DSndFile_DIR="thirdparty/libsndfile/install" -DPYTHONVER=$PYTHONVER
+cmake -Bbuild -G "Xcode" -DCMAKE_OSX_DEPLOYMENT_TARGET=$CMAKE_OSX_DEPLOYMENT_TARGET -DLIBFAUST_DIR="$LIBFAUST_DIR" -DPYTHONVER=$PYTHONVER
 
 # Build TD-Faust (Release)
 xcodebuild -configuration Release -project build/TD-Faust.xcodeproj

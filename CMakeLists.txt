@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 
-set(VERSION 0.4.1)
+set(VERSION 0.4.2)
 project(TD-Faust VERSION ${VERSION})
 
 set(SndFile_DIR ${SndFile_DIR})
@@ -72,6 +72,7 @@ if (MSVC)
     find_package(SndFile REQUIRED HINTS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-1.2.0-win64/cmake")
     target_link_libraries(${PROJECT_NAME} PRIVATE SndFile::sndfile)
 else()
+    list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/install")
     find_package(PkgConfig REQUIRED)
     # We expect the user to have used brew to install the dependencies
     # for libsndfile, to have built libsndfile as a static lib,
