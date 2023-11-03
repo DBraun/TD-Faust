@@ -14,8 +14,8 @@ jobs:
     strategy:
       matrix:
         include:
-        - { os: "windows-2022", python-version: "3.9", python-major: "39"}
-        - { os: "windows-2022", python-version: "3.11", python-major: "311"}
+        - { name: "win64", os: "windows-2022", python-version: "3.9", python-major: "39"}
+        - { name: "win64", os: "windows-2022", python-version: "3.11", python-major: "311"}
     steps:
     - uses: actions/checkout@v3
       with:
@@ -47,18 +47,18 @@ jobs:
 
     - name: Make distribution
       run: |
-        mkdir TD-Faust_dist
-        move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust_dist
-        move ${{ github.workspace }}/Plugins/sndfile.dll TD-Faust_dist
-        cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust_dist
-        Remove-Item -Recurse -Force "TD-Faust_dist/faustlibraries/.git"
-        7z a TD-Faust-${{ matrix.os }}.zip ./TD-Faust_dist/* -r
+        mkdir TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        move ${{ github.workspace }}/Plugins/sndfile.dll TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        Remove-Item -Recurse -Force "TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}/faustlibraries/.git"
+        7z a TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip ./TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}/* -r
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
-        name: TD-Faust-${{ matrix.os }}-Python${{ matrix.python-major }}
-        path: TD-Faust-${{ matrix.os }}.zip
+        name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        path: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip
 
   # build-macos:
   #   strategy:
@@ -94,13 +94,13 @@ jobs:
   #   - name: Make distribution
   #     run: |
   #       rm -rf Plugins/faustlibraries/.git
-  #       zip -r TD-Faust-${{ matrix.name }}.zip Plugins
+  #       zip -r TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip Plugins
 
   #   - name: Upload artifact
   #     uses: actions/upload-artifact@v3
   #     with:
-  #       name: my-artifact-${{ matrix.name }}
-  #       path: TD-Faust-${{ matrix.name }}.zip
+  #       name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+  #       path: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
