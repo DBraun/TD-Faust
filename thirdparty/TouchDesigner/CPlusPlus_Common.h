@@ -467,7 +467,10 @@ public:
 	// Used to do other operations to the node such as call python callbacks
 	OP_Context*		context;
 
-	int32_t			reserved[15];
+	// The number of times this node has cooked. Incremented at the start of the cook.
+	uint32_t		cookCount;
+
+	int32_t			reserved[14];
 };
 
 class OP_DATInput
