@@ -5,11 +5,13 @@ if [ "$TOUCHDESIGNER_APP" == "" ]; then
     # a reasonable default in case you forget to set the path to TouchDesigner.
     export TOUCHDESIGNER_APP=/Applications/TouchDesigner.app
 fi
+echo Assuming TouchDesigner is located at $TOUCHDESIGNER_APP
 
 if [ "$PYTHONVER" == "" ]; then
     # Guess which Python version TD uses.
     export PYTHONVER=3.9
 fi
+echo Building for Python $PYTHONVER
 
 export CMAKE_OSX_DEPLOYMENT_TARGET=11.0
 
@@ -28,7 +30,7 @@ cmake --build build --target install
 cd ../..
 
 # Use CMake for TD-Faust
-cmake -Bbuild -G "Xcode" -DCMAKE_OSX_DEPLOYMENT_TARGET=$CMAKE_OSX_DEPLOYMENT_TARGET -DLIBFAUST_DIR="$LIBFAUST_DIR" -DPYTHONVER=$PYTHONVER
+cmake -Bbuild -G "Xcode" -DCMAKE_OSX_DEPLOYMENT_TARGET=$CMAKE_OSX_DEPLOYMENT_TARGET -DLIBFAUST_DIR="$LIBFAUST_DIR" -DPYTHONVER=$PYTHONVER -DPython_ROOT_DIR=/Applications/TouchDesigner.app/Contents/Frameworks/Python.framework/Versions/$PYTHONVER
 
 # Build TD-Faust (Release)
 xcodebuild -configuration Release -project build/TD-Faust.xcodeproj
