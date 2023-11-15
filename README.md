@@ -49,12 +49,14 @@ TD-Faust is designed for macOS version 11.0 and later. Also, macOS users need to
 
 1. Clone this repository with git. Then update all submodules in the root of the repository with `git submodule update --init --recursive`
 2. Install Xcode.
-3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal.
-4. Install [Python 3.9 universal2](https://www.python.org/downloads/release/python-3910/). Confirm it's in your system PATH (`where python3` in Terminal should indicate `/Library/Frameworks/Python.framework/Versions/3.9/bin/python3`).
-5. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
-6. In a Terminal window, navigate to `thirdparty/libfaust` and run `sh download_libfaust.sh`.
-7. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`.
-8. Open `TD-Faust.toe`
+3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal. You may need to run `export PATH="/Applications/CMake.app/Contents/bin":"$PATH"`
+4. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
+5. In a Terminal window, navigate to `thirdparty/libfaust` and run `sh download_libfaust.sh`.
+6. In a Terminal Window, export a variable to the TouchDesigner.app to which you'd like to support. For example: `export TOUCHDESIGNER_APP=/Applications/TouchDesigner.app`, assuming this version is a 2022.22650 build or higher.
+7. Optional: depending on the Python version associated with the TouchDesigner you intend to use, run `export PYTHONVER=3.9` or `export PYTHONVER=3.11`.
+8. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`
+9. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`.
+10. Open `TD-Faust.toe`
 
 ## Tutorial
 
