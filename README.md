@@ -1,6 +1,6 @@
 # TD-Faust
 
-TD-Faust is an integration of [FAUST](https://faust.grame.fr) (**F**unctional **AU**dio **ST**ream) and [TouchDesigner](https://derivative.ca/). The latest builds are for TouchDesigner 2022.25370 and newer. Older TD-Faust builds can be found in the [Releases](https://github.com/DBraun/TD-Faust/releases).
+TD-Faust is an integration of [FAUST](https://faust.grame.fr) (**F**unctional **AU**dio **ST**ream) and [TouchDesigner](https://derivative.ca/). The latest builds are for TouchDesigner 2023.11290 and newer. Older TD-Faust builds can be found in the [Releases](https://github.com/DBraun/TD-Faust/releases).
 
 ## Overview
  
@@ -37,7 +37,7 @@ Examples of projects made with TD-Faust can be found [here](https://github.com/D
 
 Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `TD-Faust.dll` and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
-If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.9](https://www.python.org/downloads/release/python-3910/) to `C:/Python39/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then open a cmd window to `thirdparty/libsndfile` and run `call download_libfaust.bat`. Then you can open a cmd window to this repo's root directory and run `call build_windows.bat`.
+If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.11](https://www.python.org/downloads/release/python-3117/) to `C:/Python311/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then open a cmd window to `thirdparty/libsndfile` and run `call download_libfaust.bat`. Then you can open a cmd window to this repo's root directory and run `call build_windows.bat`.
 
 ### macOS
 
@@ -53,7 +53,7 @@ TD-Faust is designed for macOS version 11.0 and later. Also, macOS users need to
 4. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
 5. In a Terminal window, navigate to `thirdparty/libfaust` and run `sh download_libfaust.sh`.
 6. In a Terminal Window, export a variable to the TouchDesigner.app to which you'd like to support. For example: `export TOUCHDESIGNER_APP=/Applications/TouchDesigner.app`, assuming this version is a 2022.22650 build or higher.
-7. Optional: depending on the Python version associated with the TouchDesigner you intend to use, run `export PYTHONVER=3.9` or `export PYTHONVER=3.11`.
+7. Optional: depending on the Python version associated with the TouchDesigner you intend to use, run `export PYTHONVER=3.11` or `export PYTHONVER=3.9`.
 8. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`
 9. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`.
 10. Open `TD-Faust.toe`
