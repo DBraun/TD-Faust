@@ -23,6 +23,31 @@ Demo / Tutorial:
 
 Examples of projects made with TD-Faust can be found [here](https://github.com/DBraun/TD-Faust/wiki/Made-With-TD-Faust). Contributions are welcome!
 
+## Building a Custom Operator
+
+The previous overview was about using a multi-purpose CHOP to dynamically compile Faust code inside TouchDesigner. Although it's powerful, you have to specify the DSP code, press the `compile` parameter, and then begin modifying the CHOP's parameters. Ordinary CHOPs can be created from the Op Create Dialog and don't require nearly as much setup, but they are narrower in purpose. What if you want to use Faust to create a more single-purpose CHOP such as a dedicated Reverb CHOP? In this case, you should use the `faust2touchdesigner.py` script.
+
+These are the requirements:
+
+* Download libfaust by going to `thirdparty/libfaust` and running either `call download_libfaust.bat` on Windows or `sh download_libfaust.sh` on macOS.
+* Pick a Faust DSP file such as `reverb.dsp` that defines a `process = ...;`.
+* Python should be installed.
+* CMake should be installed.
+
+If on Windows, you should open an x64 Native Tools for Visual Studio command prompt. On macOS, you can use Terminal. Then run a variation of the following script:
+
+```bash
+python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
+```
+
+Limitations and Gotchas:
+* The example script above overwrites `Faust_Reverb_CHOP.h`, `Faust_Reverb_CHOP.cpp`, and `Reverb.h`, so avoid changing those files later.
+* Polyphonic instruments have not been implemented.
+* MIDI has not been implemented.
+* The `soundfile` primitive has not been implemented (`waveform` is ok!)
+* CHOP Parameters are not "smoothed" automatically, so you may want to put `si.smoo` after each `hslider`/`vslider`.
+* File a GitHub issue with any other problems or requests. Pull requests are welcome too!
+
 ## New to FAUST?
 
 * Browse the suggested [Documentation and Resources](https://github.com/grame-cncm/faust#documentation-and-resources).

@@ -4,9 +4,10 @@ CrashAutoSave*
 Backup/*
 Release/
 Debug/
-build/*
+build*
 TD-Faust.[0-9]*.toe
 SketchSynth.[0-9]*.toe
+*dsp.json
 
 # Prerequisites
 *.d
