@@ -47,7 +47,9 @@ jobs:
 
     - name: Build Reverb operator
       shell: cmd
-      run: python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
+      run: |
+        set PATH=%CD%/thirdparty/libfaust/win64/Release/bin;%PATH%
+        python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
 
     - name: Make distribution
       run: |
@@ -97,7 +99,9 @@ jobs:
 
   #   - name: Build Reverb operator
   #     shell: cmd
-  #     run: python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
+  #     run: |
+  #       export PATH=$PWD/thirdparty/libfaust/darwin-x64/Release/:$PWD/thirdparty/libfaust/darwin-arm64/Release/:$PATH
+  #       python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
 
   #   - name: Make distribution
   #     run: |
