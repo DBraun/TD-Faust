@@ -7,7 +7,7 @@ rem rm Plugins/TD-Faust.dll
 rm build/CMakeCache.txt
 
 if "%PYTHONVER%"=="" (
-    set PYTHONVER=3.9
+    set PYTHONVER=3.11
 )
 echo "Using Python version: %PYTHONVER%"
 
