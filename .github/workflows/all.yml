@@ -45,6 +45,10 @@ jobs:
       env:
         PYTHONVER: ${{ matrix.python-version}}
 
+    - name: Build Reverb operator
+      shell: cmd
+      run: python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
+
     - name: Make distribution
       run: |
         mkdir TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
@@ -90,6 +94,10 @@ jobs:
   #       which python3
   #       python3 --version
   #       sh -v build_macos.sh
+
+  #   - name: Build Reverb operator
+  #     shell: cmd
+  #     run: python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
 
   #   - name: Make distribution
   #     run: |
