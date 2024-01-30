@@ -29,12 +29,12 @@ The previous overview was about using a multi-purpose CHOP to dynamically compil
 
 These are the requirements:
 
-* Download libfaust by going to `thirdparty/libfaust` and running either `call download_libfaust.bat` on Windows or `sh download_libfaust.sh` on macOS.
+* Download libfaust by going to `thirdparty/libfaust` and running `python download_libfaust.py`.
 * Pick a Faust DSP file such as `reverb.dsp` that defines a `process = ...;`.
 * Python should be installed.
 * CMake should be installed.
 
-If on Windows, you should open an x64 Native Tools for Visual Studio command prompt. On macOS, you can use Terminal. Then run a variation of the following script:
+If on Windows, you should open an "x64 Native Tools for Visual Studio" command prompt. On macOS, you can use Terminal. Then run a variation of the following script:
 
 ```bash
 python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
@@ -62,7 +62,7 @@ Limitations and Gotchas:
 
 Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest Windows version. Copy `TD-Faust.dll` and the `faustlibraries` folder to this repository's `Plugins` folder. Open `TD-Faust.toe` and compile a few examples.
 
-If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.11](https://www.python.org/downloads/release/python-3117/) to `C:/Python311/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then open a cmd window to `thirdparty/libsndfile` and run `call download_libfaust.bat`. Then you can open a cmd window to this repo's root directory and run `call build_windows.bat`.
+If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.11](https://www.python.org/downloads/release/python-3117/) to `C:/Python311/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then open a "x64 Native Tools for Visual Studio" command prompt with Administrator privileges to `thirdparty/libsndfile` and run `python download_libfaust.py`. Then `cd` to this repo's root directory and run `python build_tdfaust.py`.
 
 ### macOS
 
@@ -76,12 +76,10 @@ TD-Faust is designed for macOS version 11.0 and later. Also, macOS users need to
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal. You may need to run `export PATH="/Applications/CMake.app/Contents/bin":"$PATH"`
 4. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
-5. In a Terminal window, navigate to `thirdparty/libfaust` and run `sh download_libfaust.sh`.
+5. In a Terminal window, navigate to `thirdparty/libfaust` and run `python download_libfaust.py`.
 6. In a Terminal Window, export a variable to the TouchDesigner.app to which you'd like to support. For example: `export TOUCHDESIGNER_APP=/Applications/TouchDesigner.app`, assuming this version is a 2022.22650 build or higher.
-7. Optional: depending on the Python version associated with the TouchDesigner you intend to use, run `export PYTHONVER=3.11` or `export PYTHONVER=3.9`.
-8. In the same Terminal window, navigate to the root of this repository and run `sh build_macos.sh`
-9. In a Terminal window, navigate to the root of this repository and run `sh build_macos.sh`.
-10. Open `TD-Faust.toe`
+7. In the same Terminal window, navigate to the root of this repository and run `python build_tdfaust.py --pythonver=3.11`
+8. Open `TD-Faust.toe`
 
 ## Tutorial
 
