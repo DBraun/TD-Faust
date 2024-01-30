@@ -164,7 +164,7 @@ if __name__ == '__main__':
     drop_prefix = args.drop_prefix
 
     op_type = re.sub('[^a-zA-Z0-9]', '', op_type)
-    op_type = op_type[0].upper() + op_type[1:]
+    op_type = op_type[0].upper() + op_type[1:].lower()
 
     op_icon = re.sub('[^a-zA-Z0-9]', '', op_icon)
 
