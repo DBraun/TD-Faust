@@ -5,6 +5,7 @@ Backup/*
 Release/
 Debug/
 build*
+!build_tdfaust.py
 TD-Faust.[0-9]*.toe
 SketchSynth.[0-9]*.toe
 *dsp.json

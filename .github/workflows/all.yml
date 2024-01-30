@@ -36,14 +36,12 @@ jobs:
       shell: cmd
       run: |
         cd thirdparty/libfaust
-        call download_libfaust.bat
+        python download_libfaust.py
     
     - name: Build TD-Faust
       shell: cmd
       run: |
-        call build_windows.bat
-      env:
-        PYTHONVER: ${{ matrix.python-version}}
+        python build_tdfaust.py --pythonver=${{ matrix.python-version}}
 
     - name: Build Reverb operator
       shell: cmd
@@ -85,12 +83,18 @@ jobs:
   #       cd install_script
   #       python macos_install_python.py
 
+  #   - name: Download Libfaust
+  #     shell: cmd
+  #     run: |
+  #       cd thirdparty/libfaust
+  #       python download_libfaust.py
+
   #   - name: Build Everything
   #     run: |
   #       export PATH=/Library/Frameworks/Python.framework/Versions/3.9:/Library/Frameworks/Python.framework/Versions/3.9/bin:/Library/Frameworks/Python.framework/Versions/3.9/lib:$PATH
   #       which python3
   #       python3 --version
-  #       sh -v build_macos.sh
+  #       python build_tdfaust.py --pythonver=3.9
 
   #   - name: Build Reverb operator
   #     shell: cmd
