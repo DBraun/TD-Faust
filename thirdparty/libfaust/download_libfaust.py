@@ -2,6 +2,7 @@ import argparse
 import os
 import platform
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -24,7 +25,7 @@ def install_macos(version: str) -> None:
         subprocess.run(["hdiutil", "attach", dmg_file], check=True)
         dir_path = f"darwin-{arch}/Release"
         os.makedirs(dir_path, exist_ok=True)
-        subprocess.run(["cp", "-R", f"/Volumes/Faust-{version}/Faust-{version}/*", dir_path], check=True)
+        subprocess.run(["cp", "-R", f"/Volumes/Faust-{version}/Faust-{version}", dir_path], check=True)
         subprocess.run(["hdiutil", "detach", f"/Volumes/Faust-{version}/"], check=True)
 
 def install_linux(version: str) -> None:
@@ -47,6 +48,10 @@ def main(version: str) -> None:
 
 
 if __name__ == "__main__":
+    MIN_PYTHON = (3, 6)
+    if sys.version_info < MIN_PYTHON:
+        sys.exit("Python %s.%s or later is required.\n" % MIN_PYTHON)
+
     parser = argparse.ArgumentParser(description="Download and install Libfaust.")
     parser.add_argument("-v", "--version", default="2.70.3", help="Specify the version of Faust to download.")
     parser.add_argument("--force", action="store_true", help="Force download even if files already exist.")
