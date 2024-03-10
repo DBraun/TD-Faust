@@ -78,7 +78,7 @@ TD-Faust is designed for macOS version 11.0 and later. Also, macOS users need to
 4. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
 5. In a Terminal window, navigate to `thirdparty/libfaust` and run `python3 download_libfaust.py`.
 6. In a Terminal Window, export a variable to the TouchDesigner.app to which you'd like to support. For example: `export TOUCHDESIGNER_APP=/Applications/TouchDesigner.app`, assuming this version is a 2022.22650 build or higher.
-7. In the same Terminal window, navigate to the root of this repository and run `python build_tdfaust.py --pythonver=3.11`
+7. In the same Terminal window, navigate to the root of this repository and run `python3 build_tdfaust.py --pythonver=3.11`
 8. Open `TD-Faust.toe`
 
 ## Tutorial

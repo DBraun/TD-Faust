@@ -7,7 +7,7 @@ import subprocess
 def run_command(command, shell=False):
     subprocess.run(command, shell=shell, check=True)
 
-def build_windows(pythonver):
+def build_windows(pythonver: str):
     os.system('rm build/CMakeCache.txt')
 
     # Download libsndfile
@@ -32,7 +32,7 @@ def build_windows(pythonver):
     run_command(["cmake", "--build", "build", "--config", "Release"])
     os.system(f'cp "thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll" "Plugins/sndfile.dll"')
 
-def build_macos(pythonver, touchdesigner_app):
+def build_macos(pythonver: str, touchdesigner_app: str):
     os.system('rm -r Plugins/TD-Faust.plugin')
 
     cmake_osx_deployment_target = "11.0"
@@ -60,7 +60,7 @@ def build_macos(pythonver, touchdesigner_app):
         f"-DPython_ROOT_DIR={touchdesigner_app}/Contents/Frameworks/Python.framework/Versions/{pythonver}"
     ]
     run_command(cmake_command)
-    run_command(["xcodebuild", "-configuration", "Release", "-project", "build/TD-Faust.xcodeproj"], shell=True)
+    run_command(["cmake", "--build", "build", "--config", "Release"])
     os.system('mv build/Release/TD-Faust.plugin Plugins')
 
 if __name__ == "__main__":

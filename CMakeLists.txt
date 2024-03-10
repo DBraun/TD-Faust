@@ -67,6 +67,12 @@ else()
 target_link_libraries(${PROJECT_NAME} PRIVATE libfaustwithllvm.a)
 endif()
 
+# Link against Python
+set(Python_FIND_REGISTRY "LAST")
+set(Python_FIND_STRATEGY "LOCATION")
+find_package(Python ${PYTHONVER} EXACT REQUIRED COMPONENTS Interpreter Development)
+target_link_libraries(${PROJECT_NAME} PRIVATE Python::Python)
+
 # Find sndfile and link it
 if (MSVC)
     find_package(SndFile REQUIRED HINTS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-1.2.0-win64/cmake")
@@ -88,12 +94,6 @@ else()
     list(POP_BACK PKG_CONFIG_EXECUTABLE)  # undo the append above
     target_link_libraries (${PROJECT_NAME} PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123)
 endif()
-
-# Link against Python
-set(Python_FIND_REGISTRY "LAST")
-set(Python_FIND_STRATEGY "LOCATION")
-find_package(Python ${PYTHONVER} EXACT REQUIRED COMPONENTS Interpreter Development)
-target_link_libraries(${PROJECT_NAME} PRIVATE Python::Python)
 
 # Platform-specific libraries and definitions
 if(APPLE)
