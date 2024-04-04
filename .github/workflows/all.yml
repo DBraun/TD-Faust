@@ -85,11 +85,10 @@ jobs:
       with:
         submodules: true
 
-    - name: Setup Python 3.11
-      run: |
-        pip install --upgrade certifi
-        cd install_script
-        python macos_install_python.py
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
 
     - name: Brew install requirements (arm64)
       if: ${{ endsWith( matrix.name, 'macos-arm64') }}
@@ -122,20 +121,20 @@ jobs:
       shell: cmd
       run: |
         cd thirdparty/libfaust
-        python3 download_libfaust.py
+        which python
+        python --version
+        python download_libfaust.py
 
     - name: Build Everything
       run: |
         export PATH=/Library/Frameworks/Python.framework/Versions/3.11:/Library/Frameworks/Python.framework/Versions/3.11/bin:/Library/Frameworks/Python.framework/Versions/3.11/lib:$PATH
-        which python3
-        python3 --version
-        python3 build_tdfaust.py --pythonver=3.11 --arch=${{matrix.arch}}
+        python build_tdfaust.py --pythonver=3.11 --arch=${{matrix.arch}}
 
     - name: Build Reverb operator
       shell: cmd
       run: |
         export PATH=$PWD/thirdparty/libfaust/darwin-${{matrix.libfaust-arch}}/Release/bin:$PATH
-        python3 faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix --arch=${{matrix.arch}}
+        python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix --arch=${{matrix.arch}}
 
     - name: Make distribution
       run: |
