@@ -2,6 +2,7 @@ import json
 import re
 import math
 import argparse
+import os
 from os.path import isfile, isdir, abspath
 import subprocess
 import shlex
@@ -304,6 +305,8 @@ if __name__ == '__main__':
     subprocess.call(shlex.split(f'cmake --build {build_dir} --config Release'))
 
     if platform.system() == 'Darwin':
-        subprocess.call(shlex.split(f'cp -r {build_dir}/Release/{op_type}.plugin Plugins'))
+        file_dest = f'"{build_dir}/Release/{op_type}.plugin"'
+        subprocess.call(shlex.split(f'cp -r {file_dest} Plugins'))
+        os.system(f'codesign --verify --deep --strict --verbose=2 {file_dest}')
 
     print('All done!')

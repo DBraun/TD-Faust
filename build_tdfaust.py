@@ -65,6 +65,7 @@ def build_macos(pythonver: str, touchdesigner_app: str, arch: str=None):
     run_command(cmake_command)
     run_command(["cmake", "--build", "build", "--config", "Release"])
     os.system('mv build/Release/TD-Faust.plugin Plugins')
+    os.system('codesign --verify --deep --strict --verbose=2 build/Release/TD-Faust.plugin')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build TD-Faust plugin for Windows or macOS.")

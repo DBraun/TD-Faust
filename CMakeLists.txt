@@ -117,13 +117,3 @@ if(MSVC)
         ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:TD-Faust>" ${CMAKE_SOURCE_DIR}/Plugins
         )
 endif()
-
-# Ensure that we only attempt to sign on macOS.
-if(APPLE)
-    if(NOT "${CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}" STREQUAL "")
-        set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Developer ID Application")
-        set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual")
-    else()
-        message(WARNING "CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM is not set. The plugin will not be signed.")
-    endif()
-endif()
