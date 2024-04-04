@@ -3,9 +3,6 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 set(VERSION 0.4.2)
 project(TD-Faust VERSION ${VERSION})
 
-# 10-digit alphanumeric developer ID
-set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "$ENV{CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}")
-
 set(SndFile_DIR ${SndFile_DIR})
 
 message(STATUS "TD-Faust external")
