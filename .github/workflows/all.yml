@@ -71,13 +71,11 @@ jobs:
             os: macos-12
             python-version: "3.11"
             python-major: "311"
-            libfaust-arch: "x64"
           - name: macos-arm64
             arch: arm64
             os: macos-12
             python-version: "3.11"
             python-major: "311"
-            libfaust-arch: "arm64"
 
     runs-on: macos-12
     steps:
@@ -126,13 +124,12 @@ jobs:
 
     - name: Build Everything
       run: |
-        export PATH=/Library/Frameworks/Python.framework/Versions/3.11:/Library/Frameworks/Python.framework/Versions/3.11/bin:/Library/Frameworks/Python.framework/Versions/3.11/lib:$PATH
+        export PATH=$pythonLocation:$PATH
         python build_tdfaust.py --pythonver=3.11 --arch=${{matrix.arch}}
 
     - name: Build Reverb operator
-      shell: cmd
       run: |
-        export PATH=$PWD/thirdparty/libfaust/darwin-${{matrix.libfaust-arch}}/Release/bin:$PATH
+        export PATH=$PWD/thirdparty/libfaust/darwin-x64/Release/bin:$PATH
         python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix --arch=${{matrix.arch}}
 
     - name: Make distribution
