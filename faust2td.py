@@ -299,10 +299,11 @@ if __name__ == '__main__':
 
     # execute CMake and build
     build_dir = 'build_faust2touchdesigner'
-    subprocess.call(shlex.split(f'cmake faust2touchdesigner -{build_dir} -DOP_TYPE={op_type} -DAUTHOR_NAME="{author_name}" -DLIBFAUST_DIR="{libfaust_dir}" {cmake_osx_deployment_target} {cmake_build_arch}'))
+    generator = " -G Xcode " if platform.system() == 'Darwin' else ''
+    subprocess.call(shlex.split(f'cmake faust2touchdesigner -B{build_dir} {generator} -DOP_TYPE={op_type} -DAUTHOR_NAME="{author_name}" -DLIBFAUST_DIR="{libfaust_dir}" {cmake_osx_deployment_target} {cmake_build_arch}'))
     subprocess.call(shlex.split(f'cmake --build {build_dir} --config Release'))
 
     if platform.system() == 'Darwin':
-        subprocess.call(shlex.split(f'cp -r {build_dir}/{op_type}.plugin Plugins'))
+        subprocess.call(shlex.split(f'cp -r {build_dir}/Release/{op_type}.plugin Plugins'))
 
     print('All done!')
