@@ -1,3 +1,5 @@
+env:
+  CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM: ${{ secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM }}
 name: Compile
 on:
   pull_request: {}
@@ -17,7 +19,7 @@ jobs:
         - { name: "win64", os: "windows-2022", python-version: "3.9", python-major: "39"}
         - { name: "win64", os: "windows-2022", python-version: "3.11", python-major: "311"}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
 
@@ -27,7 +29,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
@@ -59,67 +61,98 @@ jobs:
         name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
         path: Plugins
 
-  # build-macos:
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - name: macos-x86_64
-  #           os: macos-latest
+  build-macos:
+    strategy:
+      matrix:
+        include:
+          - name: macos-x86_64
+            arch: x86_64
+            os: macos-12
+            python-version: "3.11"
+            python-major: "311"
+            libfaust-arch: "x64"
+          - name: macos-arm64
+            arch: arm64
+            os: macos-12
+            python-version: "3.11"
+            python-major: "311"
+            libfaust-arch: "arm64"
 
-  #   runs-on: macos-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #     with:
-  #       submodules: true
+    runs-on: macos-12
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
 
-  #   - name: Setup Python 3.8
-  #     uses: actions/setup-python@v5
-  #     with:
-  #       python-version: '3.8'
+    - name: Setup Python 3.11
+      run: |
+        pip install --upgrade certifi
+        cd install_script
+        python macos_install_python.py
 
-  #   - name: Setup Python 3.9
-  #     run: |
-  #       pip install --upgrade certifi
-  #       cd install_script
-  #       python macos_install_python.py
+    - name: Brew install requirements (arm64)
+      if: ${{ endsWith( matrix.name, 'macos-arm64') }}
+      run: |
+        brew update
+        PACKAGES=(flac libogg libtool libvorbis opus mpg123 lame)
+        DEPS=($(brew deps --union --topological $(echo $PACKAGES) | tr '\n' ' '))
+        PACKAGES=("${DEPS[@]}" "${PACKAGES[@]}")
+        export HOMEBREW_NO_INSTALL_CLEANUP=1
+        export HOMEBREW_NO_INSTALL_UPGRADE=1
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        for PACKAGE in "${PACKAGES[@]}"
+        do
+          echo "Fetching bottle: $PACKAGE"
+          response=$(brew fetch --bottle-tag=arm64_monterey $PACKAGE 2>&1)
+          package_path=$(echo $response | sed -n 's/.*\:\ \(.*\.tar\.gz\).*/\1/p')
+          package_path=$(echo "$package_path" | xargs)
+          echo "Package Path: $package_path"
+          brew reinstall --verbose --force-bottle "$package_path" || true
+        done
 
-  #   - name: Download Libfaust
-  #     shell: cmd
-  #     run: |
-  #       cd thirdparty/libfaust
-  #       python download_libfaust.py
+        brew uninstall --ignore-dependencies curl git || true
+  
+    - name: Install dependencies macOS
+      if: ${{ endsWith( matrix.name, 'macos-x86_64') }}
+      run: |
+        brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
 
-  #   - name: Build Everything
-  #     run: |
-  #       export PATH=/Library/Frameworks/Python.framework/Versions/3.9:/Library/Frameworks/Python.framework/Versions/3.9/bin:/Library/Frameworks/Python.framework/Versions/3.9/lib:$PATH
-  #       which python3
-  #       python3 --version
-  #       python build_tdfaust.py --pythonver=3.9
+    - name: Download Libfaust
+      shell: cmd
+      run: |
+        cd thirdparty/libfaust
+        python download_libfaust.py
 
-  #   - name: Build Reverb operator
-  #     shell: cmd
-  #     run: |
-  #       export PATH=$PWD/thirdparty/libfaust/darwin-x64/Release/:$PWD/thirdparty/libfaust/darwin-arm64/Release/:$PATH
-  #       python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
+    - name: Build Everything
+      run: |
+        export PATH=/Library/Frameworks/Python.framework/Versions/3.11:/Library/Frameworks/Python.framework/Versions/3.11/bin:/Library/Frameworks/Python.framework/Versions/3.11/lib:$PATH
+        which python3
+        python3 --version
+        python3 build_tdfaust.py --pythonver=3.11 --arch=${{matrix.arch}}
 
-  #   - name: Make distribution
-  #     run: |
-  #       rm -rf Plugins/faustlibraries/.git
+    - name: Build Reverb operator
+      shell: cmd
+      run: |
+        export PATH=$PWD/thirdparty/libfaust/darwin-${{matrix.libfaust-arch}}/Release/bin:$PATH
+        python3 faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix --arch=${{matrix.arch}}
 
-    # - name: Upload artifact
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
-    #     path: Plugins
+    - name: Make distribution
+      run: |
+        rm -rf Plugins/faustlibraries/.git
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        path: Plugins
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
-    # needs: [build-windows, build-macos]
-    needs: [build-windows]
+    needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
     name: "Create Release on GitHub"
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: "dist"
 

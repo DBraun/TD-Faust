@@ -120,8 +120,8 @@ def install_cpython(tmp: Path, version: str, url: str) -> Path:
 def main():
 
     tmp = Path("/tmp/cibw_tmp")
-    version = "3.9"
-    url = "https://www.python.org/ftp/python/3.9.9/python-3.9.9-macos11.pkg"
+    version = "3.11"
+    url = "https://www.python.org/ftp/python/3.11.9/python-3.11.9-macos11.pkg"
 
     base_python = install_cpython(tmp, version, url)
     assert base_python.exists()

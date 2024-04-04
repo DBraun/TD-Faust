@@ -153,6 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('--email', required=False, default='', help="The author's email")
     parser.add_argument('--drop-prefix', required=False, action='store_true', default=False,
                         help="Automatically drop the first group name to make the CHOP's parameter names shorter.")
+    parser.add_argument("--arch", default=platform.machine(), help="CPU Architecture for which to build.")
 
     args = parser.parse_args()
 
@@ -175,6 +176,8 @@ if __name__ == '__main__':
 
     # Turn the Faust code into C++ code:
     faust_script = f'faust -i "{dsp_file}" -lang cpp -cn FaustDSP -json -a faust2touchdesigner/template_faustaudio.h -o faust2touchdesigner/{op_type}.h'
+
+    print(f'Executing faust script:\n{faust_script}')
     
     subprocess.call(shlex.split(faust_script))
 
@@ -270,13 +273,22 @@ if __name__ == '__main__':
     with open(f'faust2touchdesigner/Faust_{op_type}_CHOP.cpp', 'w') as f:
         f.write(template)
 
+    cmake_osx_deployment_target = f"-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0"
+
+    cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
+
     if platform.system() == 'Windows':
         libfaust_dir = 'thirdparty/libfaust/win64/Release'
     else:
-        if 'arm' in platform.processor():
+        arch = args.arch
+        if arch == 'arm64':
             libfaust_dir = 'thirdparty/libfaust/darwin-arm64/Release'
-        else:
+            cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=arm64"
+        elif arch == 'x86_64':
             libfaust_dir = 'thirdparty/libfaust/darwin-x64/Release'
+            cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
+        else:
+            raise RuntimeError(f"Unknown CPU architecture: {arch}.")
 
     libfaust_dir = str(abspath(libfaust_dir))
 
@@ -286,7 +298,11 @@ if __name__ == '__main__':
         assert isdir(libfaust_dir), "Have you run `sh download_libfaust.sh`?"
 
     # execute CMake and build
-    subprocess.call(shlex.split(f'cmake faust2touchdesigner -Bbuild_faust2touchdesigner -DOP_TYPE={op_type} -DAUTHOR_NAME="{author_name}" -DLIBFAUST_DIR="{libfaust_dir}" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0'))
-    subprocess.call(shlex.split(f'cmake --build build_faust2touchdesigner --config Release'))
+    build_dir = 'build_faust2touchdesigner'
+    subprocess.call(shlex.split(f'cmake faust2touchdesigner -{build_dir} -DOP_TYPE={op_type} -DAUTHOR_NAME="{author_name}" -DLIBFAUST_DIR="{libfaust_dir}" {cmake_osx_deployment_target} {cmake_build_arch}'))
+    subprocess.call(shlex.split(f'cmake --build {build_dir} --config Release'))
+
+    if platform.system() == 'Darwin':
+        subprocess.call(shlex.split(f'cp -r {build_dir}/{op_type}.plugin Plugins'))
 
     print('All done!')

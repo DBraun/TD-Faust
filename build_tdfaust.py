@@ -32,21 +32,23 @@ def build_windows(pythonver: str):
     run_command(["cmake", "--build", "build", "--config", "Release"])
     os.system(f'cp "thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll" "Plugins/sndfile.dll"')
 
-def build_macos(pythonver: str, touchdesigner_app: str):
+def build_macos(pythonver: str, touchdesigner_app: str, arch: str=None):
     os.system('rm -r Plugins/TD-Faust.plugin')
 
-    cmake_osx_deployment_target = "11.0"
-    if platform.machine() == 'arm64':
+    cmake_osx_deployment_target = f"-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0"
+    if arch == 'arm64':
         libfaust_dir = f"{os.getcwd()}/thirdparty/libfaust/darwin-arm64/Release"
-    elif platform.machine() == 'x86_64':
+        cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=arm64"
+    elif arch == 'x86_64':
         libfaust_dir = f"{os.getcwd()}/thirdparty/libfaust/darwin-x64/Release"
+        cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
     else:
-        raise RuntimeError(f"Unknown CPU architecture: {platform.machine()}.")
+        raise RuntimeError(f"Unknown CPU architecture: {arch}.")
 
     # Build libsndfile
     print("Building libsndfile.")
     os.chdir("thirdparty/libsndfile")
-    run_command(["cmake", "-Bbuild", "-DCMAKE_VERBOSE_MAKEFILE=ON", "-DCMAKE_INSTALL_PREFIX=./install"])
+    run_command(["cmake", "-Bbuild", "-DCMAKE_VERBOSE_MAKEFILE=ON", "-DCMAKE_INSTALL_PREFIX=./install", cmake_osx_deployment_target, cmake_build_arch])
     run_command(["cmake", "--build", "build", "--config", "Release"])
     run_command(["cmake", "--build", "build", "--target", "install"])
     os.chdir("../..")
@@ -54,10 +56,11 @@ def build_macos(pythonver: str, touchdesigner_app: str):
     # Build with CMake
     cmake_command = [
         "cmake", "-Bbuild", "-G", "Xcode",
-        f"-DCMAKE_OSX_DEPLOYMENT_TARGET={cmake_osx_deployment_target}",
         f"-DLIBFAUST_DIR={libfaust_dir}",
         f"-DPYTHONVER={pythonver}",
-        f"-DPython_ROOT_DIR={touchdesigner_app}/Contents/Frameworks/Python.framework/Versions/{pythonver}"
+        f"-DPython_ROOT_DIR={touchdesigner_app}/Contents/Frameworks/Python.framework/Versions/{pythonver}",
+        cmake_osx_deployment_target,
+        cmake_build_arch
     ]
     run_command(cmake_command)
     run_command(["cmake", "--build", "build", "--config", "Release"])
@@ -67,11 +70,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build TD-Faust plugin for Windows or macOS.")
     parser.add_argument("--pythonver", default="3.11", help="Specify the Python version.")
     parser.add_argument("--touchdesigner_app", default="/Applications/TouchDesigner.app", help="Path to TouchDesigner app (macOS only).")
+    parser.add_argument("--arch", default=platform.machine(), help="CPU Architecture for which to build.")
     args = parser.parse_args()
 
     if platform.system() == "Windows":
         build_windows(args.pythonver)
     elif platform.system() == "Darwin":
-        build_macos(args.pythonver, args.touchdesigner_app)
+        build_macos(args.pythonver, args.touchdesigner_app, args.arch)
     else:
         raise RuntimeError(f"Unsupported operating system: {platform.system()}.")

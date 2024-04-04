@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 set(VERSION 0.4.2)
 project(TD-Faust VERSION ${VERSION})
 
+# 10-digit alphanumeric developer ID
+set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "$ENV{CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}")
+
 set(SndFile_DIR ${SndFile_DIR})
 
 message(STATUS "TD-Faust external")
@@ -113,4 +116,14 @@ if(MSVC)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
         ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:TD-Faust>" ${CMAKE_SOURCE_DIR}/Plugins
         )
+endif()
+
+# Ensure that we only attempt to sign on macOS.
+if(APPLE)
+    if(NOT "${CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}" STREQUAL "")
+        set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Developer ID Application")
+        set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual")
+    else()
+        message(WARNING "CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM is not set. The plugin will not be signed.")
+    endif()
 endif()

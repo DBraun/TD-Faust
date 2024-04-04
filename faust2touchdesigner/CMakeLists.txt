@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 set(VERSION 0.0.1)
 project(${OP_TYPE} VERSION ${VERSION})
 
+# 10-digit alphanumeric developer ID
+set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "$ENV{CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}")
+
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${OP_TYPE})
 
 set(TOUCHDESIGNER_INC ${PROJECT_SOURCE_DIR}/../thirdparty/TouchDesigner/)
@@ -45,7 +48,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION "${VERSION}"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION}"
     MACOSX_BUNDLE_COPYRIGHT "${AUTHOR_NAME}"
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Faust2TouchDesigner/Info.plist
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
     XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "/System/Library/PrivateFrameworks /Library/Frameworks"
 )
 
@@ -75,4 +78,14 @@ if(MSVC)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND
         ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${PROJECT_NAME}>" ${CMAKE_SOURCE_DIR}/../Plugins
         )
+endif()
+
+# Ensure that we only attempt to sign on macOS.
+if(APPLE)
+    if(NOT "${CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}" STREQUAL "")
+        set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Developer ID Application")
+        set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual")
+    else()
+        message(WARNING "CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM is not set. The plugin will not be signed.")
+    endif()
 endif()

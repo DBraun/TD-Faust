@@ -20,7 +20,3 @@ struct Meta;
 #include <faust/gui/LayoutUI.h>
 #include <faust/gui/ValueConverter.h>
 #include <faust/misc.h>
-
-<<includeIntrinsic>>
-
-<<includeclass>>
