@@ -65,7 +65,8 @@ def build_macos(pythonver: str, touchdesigner_app: str, arch: str=None):
     run_command(cmake_command)
     run_command(["cmake", "--build", "build", "--config", "Release"])
     os.system('mv build/Release/TD-Faust.plugin Plugins')
-    os.system('codesign --verify --deep --strict --verbose=2 build/Release/TD-Faust.plugin')
+    if 'CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM' in os.environ:
+        os.system(f'codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Developer ID Application: David Braun ($CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM)" build/Release/TD-Faust.plugin')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build TD-Faust plugin for Windows or macOS.")
