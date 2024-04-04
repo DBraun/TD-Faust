@@ -118,7 +118,6 @@ jobs:
         brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
 
     - name: Download Libfaust
-      shell: cmd
       run: |
         cd thirdparty/libfaust
         which python
