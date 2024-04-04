@@ -63,6 +63,7 @@ jobs:
 
   build-macos:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: macos-x86_64
@@ -121,7 +122,7 @@ jobs:
       shell: cmd
       run: |
         cd thirdparty/libfaust
-        python download_libfaust.py
+        python3 download_libfaust.py
 
     - name: Build Everything
       run: |
