@@ -137,13 +137,13 @@ jobs:
       run: |
         export PATH=$pythonLocation:$PATH
         python build_tdfaust.py --pythonver=3.11 --arch=${{matrix.arch}}
-        codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Apple Development: David Braun" Plugins/TD-Faust.plugin
+        codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Developer ID Application: David Braun (${{secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}})" Plugins/TD-Faust.plugin
 
     - name: Build Reverb operator
       run: |
         export PATH=$PWD/thirdparty/libfaust/darwin-x64/Release/bin:$PATH
         python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix --arch=${{matrix.arch}}
-        codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Apple Development: David Braun" Plugins/Reverb.plugin'
+        codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Developer ID Application: David Braun (${{secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}})" Plugins/Reverb.plugin'
 
     - name: Make distribution
       run: |
