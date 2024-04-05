@@ -299,7 +299,7 @@ if __name__ == '__main__':
         assert isdir(libfaust_dir), "Have you run `sh download_libfaust.sh`?"
 
     # execute CMake and build
-    build_dir = 'build_faust2touchdesigner'
+    build_dir = f'build_{op_type}'
     generator = " -G Xcode " if platform.system() == 'Darwin' else ''
     subprocess.call(shlex.split(f'cmake faust2touchdesigner -B{build_dir} {generator} -DOP_TYPE={op_type} -DAUTHOR_NAME="{author_name}" -DLIBFAUST_DIR="{libfaust_dir}" {cmake_osx_deployment_target} {cmake_build_arch}'))
     subprocess.call(shlex.split(f'cmake --build {build_dir} --config Release'))
@@ -308,7 +308,8 @@ if __name__ == '__main__':
         file_dest = f'"{build_dir}/Release/{op_type}.plugin"'
         subprocess.call(shlex.split(f'cp -r {file_dest} Plugins'))
         if 'CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM' in os.environ:
-            os.system(f'codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Developer ID Application: David Braun ($CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM)" {file_dest}')
+            CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM = os.environ['CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM']
+            subprocess.call(shlex.split(f'codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Developer ID Application: David Braun ({CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM})" {file_dest}'))
 
 
     print('All done!')
