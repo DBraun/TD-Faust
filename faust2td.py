@@ -307,9 +307,5 @@ if __name__ == '__main__':
     if platform.system() == 'Darwin':
         file_dest = f'"{build_dir}/Release/{op_type}.plugin"'
         subprocess.call(shlex.split(f'cp -r {file_dest} Plugins'))
-        if 'CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM' in os.environ:
-            CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM = os.environ['CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM']
-            subprocess.call(shlex.split(f'codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Developer ID Application: David Braun ({CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM})" {file_dest}'))
-
 
     print('All done!')
