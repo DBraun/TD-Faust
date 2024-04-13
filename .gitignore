@@ -8,6 +8,9 @@ build*
 !build_tdfaust.py
 TD-Faust.[0-9]*.toe
 SketchSynth.[0-9]*.toe
+faust2touchdesigner/Reverb.h
+faust2touchdesigner/Faust_Reverb_CHOP.h
+faust2touchdesigner/Faust_Reverb_CHOP.cpp
 *dsp.json
 
 # Prerequisites

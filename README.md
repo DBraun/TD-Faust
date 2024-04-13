@@ -41,7 +41,7 @@ Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. D
 
 #### Compiling locally
 
-If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.11](https://www.python.org/downloads/release/python-3117/) to `C:/Python311/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then open a "x64 Native Tools for Visual Studio" command prompt with Administrator privileges to `thirdparty/libfaust` and run `python download_libfaust.py`. Then `cd` to this repo's root directory and run `python build_tdfaust.py`.
+If you need to compile `TD-Faust.dll` yourself, you should first install [Python 3.11](https://www.python.org/downloads/release/python-3117/) to `C:/Python311/` and confirm it's in your system PATH. You'll also need Visual Studio 2022 and CMake. Then open a "x64 Native Tools for Visual Studio" command prompt with Administrator privileges to this repo's root directory and run `python build_tdfaust.py`.
 
 ### macOS
 
@@ -65,15 +65,9 @@ Open `TD-Faust.toe` and compile a few examples.
 We have previously described a multi-purpose CHOP that dynamically compiles Faust code inside TouchDesigner. Although it's powerful, you have to specify the DSP code, press the `compile` parameter, and only then do the CHOP's parameters appear. In contrast, ordinary [CHOPs](https://docs.derivative.ca/CHOP) can be created from the [OP Create Dialog](https://docs.derivative.ca/OP_Create_Dialog) and already have parameters, but they are narrower in purpose. What if you want to use Faust to create a more single-purpose Reverb CHOP with these advantages? In this case, you should use the `faust2touchdesigner.py` script.
 
 These are the requirements:
-
-* Download libfaust by going to `thirdparty/libfaust` and running `python download_libfaust.py` (`python3 download_libfaust.py` on macOS).
 * Pick a Faust DSP file such as `reverb.dsp` that defines a `process = ...;`.
 * Python should be installed.
 * CMake should be installed.
-* If Faust is not installed (see [here](https://github.com/grame-cncm/faust/releases)), then you must put the libfaust's `faust` executable in your path.
-* * On macOS arm64: `export PATH=$PWD/thirdparty/libfaust/darwin-arm64/bin:$PATH`
-* * On macOS x86_64: `export PATH=$PWD/thirdparty/libfaust/darwin-x64/bin:$PATH`
-* * On Windows: `set PATH=%CD%/thirdparty/libfaust/win64/bin;%PATH%`
 
 If on Windows, you should open an "x64 Native Tools for Visual Studio" command prompt. On macOS, you can use Terminal. Then run a variation of the following script:
 
@@ -82,6 +76,7 @@ python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev
 ```
 
 Limitations and Gotchas:
+* Use `python3` on macOS.
 * The example script above overwrites `Faust_Reverb_CHOP.h`, `Faust_Reverb_CHOP.cpp`, and `Reverb.h`, so avoid changing those files later.
 * [Polyphonic](https://faustdoc.grame.fr/manual/midi/#standard-polyphony-parameters) instruments have not been implemented.
 * MIDI has not been implemented.

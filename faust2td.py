@@ -145,8 +145,10 @@ def get_libfaust_dir():
     cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
 
     if platform.system() == 'Windows':
+        subprocess.run(shlex.split("python download_libfaust.py"), check=True, cwd="thirdparty/libfaust")
         libfaust_dir = 'thirdparty/libfaust/win64/Release'
     else:
+        subprocess.run(shlex.split("python3 download_libfaust.py"), check=True, cwd="thirdparty/libfaust")
         arch = args.arch
         if arch == 'arm64':
             libfaust_dir = 'thirdparty/libfaust/darwin-arm64/Release'
