@@ -1,3 +1,11 @@
+env:
+  CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM: ${{ secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM }}
+  MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+  MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+  P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+  NOTARIZATION_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
+  NOTARIZATION_USERNAME: ${{ secrets.NOTARIZATION_USERNAME }}
+  NOTARIZATION_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
 name: Compile
 on:
   pull_request: {}
@@ -17,7 +25,7 @@ jobs:
         - { name: "win64", os: "windows-2022", python-version: "3.9", python-major: "39"}
         - { name: "win64", os: "windows-2022", python-version: "3.11", python-major: "311"}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
 
@@ -27,16 +35,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
-
-    - name: Download Libfaust
-      shell: cmd
-      run: |
-        cd thirdparty/libfaust
-        python download_libfaust.py
     
     - name: Build TD-Faust
       shell: cmd
@@ -59,67 +61,139 @@ jobs:
         name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
         path: Plugins
 
-  # build-macos:
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - name: macos-x86_64
-  #           os: macos-latest
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-x86_64
+            arch: x86_64
+            os: macos-12
+            python-version: "3.11"
+            python-major: "311"
+          - name: macos-arm64
+            arch: arm64
+            os: macos-12
+            python-version: "3.11"
+            python-major: "311"
 
-  #   runs-on: macos-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #     with:
-  #       submodules: true
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
 
-  #   - name: Setup Python 3.8
-  #     uses: actions/setup-python@v5
-  #     with:
-  #       python-version: '3.8'
+    - name: Install Certificate
+      # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
+      run: |
+        # create variables
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-  #   - name: Setup Python 3.9
-  #     run: |
-  #       pip install --upgrade certifi
-  #       cd install_script
-  #       python macos_install_python.py
+        # import certificate and provisioning profile from secrets
+        echo -n "$MACOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
 
-  #   - name: Download Libfaust
-  #     shell: cmd
-  #     run: |
-  #       cd thirdparty/libfaust
-  #       python download_libfaust.py
+        # create temporary keychain
+        security create-keychain -p "$MACOS_CERTIFICATE_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$MACOS_CERTIFICATE_PASSWORD" $KEYCHAIN_PATH
 
-  #   - name: Build Everything
-  #     run: |
-  #       export PATH=/Library/Frameworks/Python.framework/Versions/3.9:/Library/Frameworks/Python.framework/Versions/3.9/bin:/Library/Frameworks/Python.framework/Versions/3.9/lib:$PATH
-  #       which python3
-  #       python3 --version
-  #       python build_tdfaust.py --pythonver=3.9
+        # import certificate to keychain
+        security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security set-key-partition-list -S apple-tool:,apple: -k "$MACOS_CERTIFICATE_PASSWORD" $KEYCHAIN_PATH
+        echo "list-keychain:\n"
+        security list-keychain -d user -s $KEYCHAIN_PATH
+        echo "find-identity:\n"
+        security find-identity -v
+        echo "find-identity codesigning:\n"
+        security find-identity -p codesigning -v
 
-  #   - name: Build Reverb operator
-  #     shell: cmd
-  #     run: |
-  #       export PATH=$PWD/thirdparty/libfaust/darwin-x64/Release/:$PWD/thirdparty/libfaust/darwin-arm64/Release/:$PATH
-  #       python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
 
-  #   - name: Make distribution
-  #     run: |
-  #       rm -rf Plugins/faustlibraries/.git
+    - name: Brew install requirements (arm64)
+      if: ${{ endsWith( matrix.name, 'macos-arm64') }}
+      run: |
+        brew update
+        PACKAGES=(flac libogg libtool libvorbis opus mpg123 lame)
+        DEPS=($(brew deps --union --topological $(echo $PACKAGES) | tr '\n' ' '))
+        PACKAGES=("${DEPS[@]}" "${PACKAGES[@]}")
+        export HOMEBREW_NO_INSTALL_CLEANUP=1
+        export HOMEBREW_NO_INSTALL_UPGRADE=1
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        for PACKAGE in "${PACKAGES[@]}"
+        do
+          echo "Fetching bottle: $PACKAGE"
+          response=$(brew fetch --bottle-tag=arm64_monterey $PACKAGE 2>&1)
+          package_path=$(echo $response | sed -n 's/.*\:\ \(.*\.tar\.gz\).*/\1/p')
+          package_path=$(echo "$package_path" | xargs)
+          echo "Package Path: $package_path"
+          brew reinstall --verbose --force-bottle "$package_path" || true
+        done
 
-    # - name: Upload artifact
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
-    #     path: Plugins
+        brew uninstall --ignore-dependencies curl git || true
+  
+    - name: Install dependencies macOS
+      if: ${{ endsWith( matrix.name, 'macos-x86_64') }}
+      run: |
+        brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
+
+    - name: Build Everything
+      run: |
+        export PATH=$pythonLocation:$PATH
+        python build_tdfaust.py --pythonver=3.11 --arch=${{matrix.arch}}
+        codesign --force --deep --timestamp --verify --verbose=2 --options=runtime --sign "Developer ID Application: David Braun (${{secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}})" Plugins/TD-Faust.plugin
+        codesign --verify --deep --strict --verbose=2 Plugins/TD-Faust.plugin
+
+    - name: Build Reverb operator
+      run: |
+        export PATH=$PWD/thirdparty/libfaust/darwin-x64/Release/bin:$PATH
+        python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix --arch=${{matrix.arch}}
+        codesign --force --deep --timestamp --verify --verbose=2 --options=runtime --sign "Developer ID Application: David Braun (${{secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}})" Plugins/Reverb.plugin
+        codesign --verify --deep --strict --verbose=2 Plugins/Reverb.plugin
+
+    - name: Make distribution
+      run: |
+        rm -rf Plugins/faustlibraries
+        zip -r Plugins.zip Plugins
+
+    - name: Notarize
+      run: |
+        xcrun notarytool submit "Plugins.zip" \
+        --team-id "$NOTARIZATION_TEAM_ID" \
+        --apple-id "$NOTARIZATION_USERNAME" \
+        --password "$NOTARIZATION_PASSWORD" \
+        --wait
+  
+    - name: Staple
+      # While you can notarize a ZIP archive, you can’t staple to it directly.
+      # Instead, run stapler against each item that you added to the archive.
+      # Then create a new ZIP file containing the stapled items for distribution.
+      # Although tickets are created for standalone binaries, it’s not currently possible to staple tickets to them.
+      run: |
+        xcrun stapler staple Plugins/TD-Faust.plugin
+        xcrun stapler staple Plugins/Reverb.plugin
+
+    - name: Make stapled distribution
+      run: |
+        zip -r TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip Plugins
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        path: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip
+        if-no-files-found: error
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')
-    # needs: [build-windows, build-macos]
-    needs: [build-windows]
+    needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
     name: "Create Release on GitHub"
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: "dist"
 

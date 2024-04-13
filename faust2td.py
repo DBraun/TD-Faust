@@ -2,6 +2,7 @@ import json
 import re
 import math
 import argparse
+import os
 from os.path import isfile, isdir, abspath
 import subprocess
 import shlex
@@ -140,6 +141,34 @@ def add_toggle(item) -> str:
     return text
 
 
+def get_libfaust_dir():
+    cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
+
+    if platform.system() == 'Windows':
+        subprocess.run(shlex.split("python download_libfaust.py"), check=True, cwd="thirdparty/libfaust")
+        libfaust_dir = 'thirdparty/libfaust/win64/Release'
+    else:
+        subprocess.run(shlex.split("python3 download_libfaust.py"), check=True, cwd="thirdparty/libfaust")
+        arch = args.arch
+        if arch == 'arm64':
+            libfaust_dir = 'thirdparty/libfaust/darwin-arm64/Release'
+            cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=arm64"
+        elif arch == 'x86_64':
+            libfaust_dir = 'thirdparty/libfaust/darwin-x64/Release'
+            cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
+        else:
+            raise RuntimeError(f"Unknown CPU architecture: {arch}.")
+
+    libfaust_dir = str(abspath(libfaust_dir))
+
+    if platform.system() == 'Windows':
+        assert isdir(libfaust_dir), "Have you run `call download_libfaust.bat`?"
+    else:
+        assert isdir(libfaust_dir), "Have you run `sh download_libfaust.sh`?"
+    
+    return libfaust_dir, cmake_build_arch
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -153,6 +182,7 @@ if __name__ == '__main__':
     parser.add_argument('--email', required=False, default='', help="The author's email")
     parser.add_argument('--drop-prefix', required=False, action='store_true', default=False,
                         help="Automatically drop the first group name to make the CHOP's parameter names shorter.")
+    parser.add_argument("--arch", default=platform.machine(), help="CPU Architecture for which to build.")
 
     args = parser.parse_args()
 
@@ -173,10 +203,19 @@ if __name__ == '__main__':
     dsp_file = args.dsp
     assert isfile(dsp_file), f'The requested DSP file "{dsp_file}" was not found.'
 
+    libfaust_dir, cmake_build_arch = get_libfaust_dir()
+
     # Turn the Faust code into C++ code:
     faust_script = f'faust -i "{dsp_file}" -lang cpp -cn FaustDSP -json -a faust2touchdesigner/template_faustaudio.h -o faust2touchdesigner/{op_type}.h'
     
-    subprocess.call(shlex.split(faust_script))
+    try:
+        print(f'Executing faust script:\n{faust_script}')
+        subprocess.call(shlex.split(faust_script))
+    except FileNotFoundError as e:
+        # Maybe `faust` isn't in PATH, so default to trying the libfaust binary.
+        faust_script = f'{libfaust_dir}/bin/' + faust_script
+        print(f'Executing faust script:\n{faust_script}')
+        subprocess.call(shlex.split(faust_script))
 
     assert isfile(f'faust2touchdesigner/{op_type}.h')
 
@@ -270,23 +309,16 @@ if __name__ == '__main__':
     with open(f'faust2touchdesigner/Faust_{op_type}_CHOP.cpp', 'w') as f:
         f.write(template)
 
-    if platform.system() == 'Windows':
-        libfaust_dir = 'thirdparty/libfaust/win64/Release'
-    else:
-        if 'arm' in platform.processor():
-            libfaust_dir = 'thirdparty/libfaust/darwin-arm64/Release'
-        else:
-            libfaust_dir = 'thirdparty/libfaust/darwin-x64/Release'
-
-    libfaust_dir = str(abspath(libfaust_dir))
-
-    if platform.system() == 'Windows':
-        assert isdir(libfaust_dir), "Have you run `call download_libfaust.bat`?"
-    else:
-        assert isdir(libfaust_dir), "Have you run `sh download_libfaust.sh`?"
+    cmake_osx_deployment_target = f"-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0"
 
     # execute CMake and build
-    subprocess.call(shlex.split(f'cmake faust2touchdesigner -Bbuild_faust2touchdesigner -DOP_TYPE={op_type} -DAUTHOR_NAME="{author_name}" -DLIBFAUST_DIR="{libfaust_dir}" -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0'))
-    subprocess.call(shlex.split(f'cmake --build build_faust2touchdesigner --config Release'))
+    build_dir = f'build_{op_type}'
+    generator = " -G Xcode " if platform.system() == 'Darwin' else ''
+    subprocess.call(shlex.split(f'cmake faust2touchdesigner -B{build_dir} {generator} -DOP_TYPE={op_type} -DAUTHOR_NAME="{author_name}" -DLIBFAUST_DIR="{libfaust_dir}" {cmake_osx_deployment_target} {cmake_build_arch}'))
+    subprocess.call(shlex.split(f'cmake --build {build_dir} --config Release'))
+
+    if platform.system() == 'Darwin':
+        file_dest = f'"{build_dir}/Release/{op_type}.plugin"'
+        subprocess.call(shlex.split(f'cp -r {file_dest} Plugins'))
 
     print('All done!')
