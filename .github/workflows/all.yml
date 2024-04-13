@@ -17,49 +17,49 @@ on:
     - '*'
 jobs:
 
-  # build-windows:
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       include:
-  #       - { name: "win64", os: "windows-2022", python-version: "3.9", python-major: "39"}
-  #       - { name: "win64", os: "windows-2022", python-version: "3.11", python-major: "311"}
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       submodules: true
+  build-windows:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+        - { name: "win64", os: "windows-2022", python-version: "3.9", python-major: "39"}
+        - { name: "win64", os: "windows-2022", python-version: "3.11", python-major: "311"}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
 
-  #   - name: Setup Python
-  #     uses: actions/setup-python@v5
-  #     with:
-  #       python-version: ${{ matrix.python-version }}
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
 
-  #   - name: Add msbuild to PATH
-  #     uses: microsoft/setup-msbuild@v2
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v2
 
-  #   - name: Get CMake
-  #     uses: lukka/get-cmake@latest
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
     
-  #   - name: Build TD-Faust
-  #     shell: cmd
-  #     run: |
-  #       python build_tdfaust.py --pythonver=${{ matrix.python-version}}
+    - name: Build TD-Faust
+      shell: cmd
+      run: |
+        python build_tdfaust.py --pythonver=${{ matrix.python-version}}
 
-  #   - name: Build Reverb operator
-  #     shell: cmd
-  #     run: |
-  #       set PATH=%CD%/thirdparty/libfaust/win64/Release/bin;%PATH%
-  #       python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
+    - name: Build Reverb operator
+      shell: cmd
+      run: |
+        set PATH=%CD%/thirdparty/libfaust/win64/Release/bin;%PATH%
+        python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix
 
-  #   - name: Make distribution
-  #     run: |
-  #       Remove-Item -Recurse -Force "${{ github.workspace }}/Plugins/faustlibraries/.git"
+    - name: Make distribution
+      run: |
+        Remove-Item -Recurse -Force "${{ github.workspace }}/Plugins/faustlibraries/.git"
 
-  #   - name: Upload artifact
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
-  #       path: Plugins
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        path: Plugins
 
   build-macos:
     strategy:
