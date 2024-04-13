@@ -9,6 +9,8 @@ message(STATUS "TD-Faust external")
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT TD-Faust)
 
+set(FAUST_LIBRARIES_DIR ${LIBFAUST_DIR}/share/faust)
+
 set(TOUCHDESIGNER_INC ${PROJECT_SOURCE_DIR}/thirdparty/TouchDesigner/)
 
 set(Headers
@@ -52,6 +54,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/TD-Faust/Info.plist
     XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "/System/Library/PrivateFrameworks /Library/Frameworks"
 )
+if(APPLE)
+install(
+    DIRECTORY ${FAUST_LIBRARIES_DIR}
+    DESTINATION "$<TARGET_FILE_DIR:TD-Faust>/../Resources"
+    PATTERN "*.lproj" EXCLUDE
+    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+)
+endif()
 
 # Basic includes
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/faust/architecture)

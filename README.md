@@ -47,11 +47,7 @@ If you need to compile `TD-Faust.dll` yourself, you should first install [Python
 
 #### Pre-compiled
 
-Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Users with "Apple Silicon" computers should download "arm64". Copy `Reverb.plugin`, `TD-Faust.plugin`, and the `faustlibraries` folder to this repository's `Plugins` folder. Then run the following in Terminal.
-```bash
-xattr -d com.apple.quarantine Plugins/Reverb.plugin 
-xattr -d com.apple.quarantine Plugins/TD-Faust.plugin 
-```
+Visit TD-Faust's [Releases](https://github.com/DBraun/TD-Faust/releases) page. Download and unzip the latest macOS version. Users with "Apple Silicon" computers should download "arm64". Copy `TD-Faust.plugin` and `Reverb.plugin` to this repository's `Plugins` folder.
 
 Open `TD-Faust.toe` and compile a few examples.
 
@@ -61,10 +57,8 @@ Open `TD-Faust.toe` and compile a few examples.
 2. Install Xcode.
 3. [Install CMake](https://cmake.org/download/) and confirm that it's installed by running `cmake --version` in Terminal. You may need to run `export PATH="/Applications/CMake.app/Contents/bin":"$PATH"`
 4. Install requirements with [brew](http://brew.sh/): `brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config`
-5. In a Terminal window, navigate to `thirdparty/libfaust` and run `python3 download_libfaust.py`.
-6. In a Terminal Window, export a variable to the TouchDesigner.app to which you'd like to support. For example: `export TOUCHDESIGNER_APP=/Applications/TouchDesigner.app`, assuming this version is a 2022.22650 build or higher.
-7. In the same Terminal window, navigate to the root of this repository and run `python3 build_tdfaust.py --pythonver=3.11`
-8. Open `TD-Faust.toe`
+5. In the same Terminal window, navigate to the root of this repository and run `python3 build_tdfaust.py --pythonver=3.11`
+6. Open `TD-Faust.toe`
 
 ## Building a Custom Operator
 

@@ -1,7 +1,11 @@
 env:
   CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM: ${{ secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM }}
-  MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+  MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
   MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+  P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+  NOTARIZATION_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
+  NOTARIZATION_USERNAME: ${{ secrets.NOTARIZATION_USERNAME }}
+  NOTARIZATION_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
 name: Compile
 on:
   pull_request: {}
@@ -35,12 +39,6 @@ jobs:
 
   #   - name: Get CMake
   #     uses: lukka/get-cmake@latest
-
-  #   - name: Download Libfaust
-  #     shell: cmd
-  #     run: |
-  #       cd thirdparty/libfaust
-  #       python download_libfaust.py
     
   #   - name: Build TD-Faust
   #     shell: cmd
@@ -79,20 +77,36 @@ jobs:
             python-version: "3.11"
             python-major: "311"
 
-    runs-on: macos-12
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
 
     - name: Install Certificate
+      # https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
       run: |
-        echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
-        security create-keychain -p "" build.keychain
-        security default-keychain -s build.keychain
-        security unlock-keychain -p "" build.keychain
-        security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        # create variables
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+        # import certificate and provisioning profile from secrets
+        echo -n "$MACOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+        # create temporary keychain
+        security create-keychain -p "$MACOS_CERTIFICATE_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$MACOS_CERTIFICATE_PASSWORD" $KEYCHAIN_PATH
+
+        # import certificate to keychain
+        security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security set-key-partition-list -S apple-tool:,apple: -k "$MACOS_CERTIFICATE_PASSWORD" $KEYCHAIN_PATH
+        echo "list-keychain:\n"
+        security list-keychain -d user -s $KEYCHAIN_PATH
+        echo "find-identity:\n"
         security find-identity -v
+        echo "find-identity codesigning:\n"
+        security find-identity -p codesigning -v
 
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -126,36 +140,52 @@ jobs:
       run: |
         brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
 
-    - name: Download Libfaust
-      run: |
-        cd thirdparty/libfaust
-        which python
-        python --version
-        python download_libfaust.py
-
     - name: Build Everything
       run: |
         export PATH=$pythonLocation:$PATH
         python build_tdfaust.py --pythonver=3.11 --arch=${{matrix.arch}}
-        codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Apple Distribution: David Braun" Plugins/TD-Faust.plugin
+        codesign --force --deep --timestamp --verify --verbose=2 --options=runtime --sign "Developer ID Application: David Braun (${{secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}})" Plugins/TD-Faust.plugin
         codesign --verify --deep --strict --verbose=2 Plugins/TD-Faust.plugin
 
     - name: Build Reverb operator
       run: |
         export PATH=$PWD/thirdparty/libfaust/darwin-x64/Release/bin:$PATH
         python faust2td.py --dsp reverb.dsp --type "Reverb" --label "Reverb" --icon "Rev" --author "David Braun" --email "github.com/DBraun" --drop-prefix --arch=${{matrix.arch}}
-        codesign --force --verify --verbose=2 --timestamp --options=runtime --deep --sign "Apple Distribution: David Braun" Plugins/Reverb.plugin
+        codesign --force --deep --timestamp --verify --verbose=2 --options=runtime --sign "Developer ID Application: David Braun (${{secrets.CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}})" Plugins/Reverb.plugin
         codesign --verify --deep --strict --verbose=2 Plugins/Reverb.plugin
 
     - name: Make distribution
       run: |
-        rm -rf Plugins/faustlibraries/.git
+        rm -rf Plugins/faustlibraries
+        zip -r Plugins.zip Plugins
+
+    - name: Notarize
+      run: |
+        xcrun notarytool submit "Plugins.zip" \
+        --team-id "$NOTARIZATION_TEAM_ID" \
+        --apple-id "$NOTARIZATION_USERNAME" \
+        --password "$NOTARIZATION_PASSWORD" \
+        --wait
+  
+    - name: Staple
+      # While you can notarize a ZIP archive, you can’t staple to it directly.
+      # Instead, run stapler against each item that you added to the archive.
+      # Then create a new ZIP file containing the stapled items for distribution.
+      # Although tickets are created for standalone binaries, it’s not currently possible to staple tickets to them.
+      run: |
+        xcrun stapler staple Plugins/TD-Faust.plugin
+        xcrun stapler staple Plugins/Reverb.plugin
+
+    - name: Make stapled distribution
+      run: |
+        zip -r TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip Plugins
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
-        path: Plugins
+        path: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip
+        if-no-files-found: error
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/v')

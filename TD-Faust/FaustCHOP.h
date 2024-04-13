@@ -141,6 +141,7 @@ class FaustCHOP : public CHOP_CPlusPlusBase {
   string m_errorString = string("");
   string m_warningString = string("");
   string m_name_app = string("");
+  string m_compile_options = string("");
   // auto import
   string m_autoImport;
   bool m_groupVoices = true;

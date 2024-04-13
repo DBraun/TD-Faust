@@ -65,6 +65,7 @@ def build_macos(pythonver: str, touchdesigner_app: str, arch: str=None):
     ]
     run_command(cmake_command)
     run_command(["cmake", "--build", "build", "--config", "Release"])
+    run_command(["cmake", "--build", "build", "--config", "Release", "--target", "install"])
     os.system('mv build/Release/TD-Faust.plugin Plugins')
 
 if __name__ == "__main__":
@@ -75,8 +76,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if platform.system() == "Windows":
+        subprocess.run(shlex.split("python download_libfaust.py"), check=True, cwd="thirdparty/libfaust")
         build_windows(args.pythonver)
     elif platform.system() == "Darwin":
+        subprocess.run(shlex.split("python3 download_libfaust.py"), check=True, cwd="thirdparty/libfaust")
         build_macos(args.pythonver, args.touchdesigner_app, args.arch)
     else:
         raise RuntimeError(f"Unsupported operating system: {platform.system()}.")

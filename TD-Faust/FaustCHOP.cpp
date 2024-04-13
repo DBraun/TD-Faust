@@ -75,6 +75,53 @@ std::list<GUI*> GUI::fGuiList;
 ztimedmap GUI::gTimedZoneMap;
 static int numCompiled = 0;
 
+// This was made with ChatGPT 4 because I don't want to use Boost.Program_options.
+// I can't use POSIX wordexp because I need Windows support.
+std::vector<std::string> splitArguments(const std::string& args) {
+    std::vector<std::string> result;
+    std::string current;
+    bool inQuotes = false;
+    char currentQuote = '\0';  // to differentiate between single and double quotes
+
+    for (size_t i = 0; i < args.size(); ++i) {
+        char c = args[i];
+
+        // Check if the current character is a quote
+        if (c == '"' || c == '\'') {
+            // If we're not currently in quotes, start quoting
+            if (!inQuotes) {
+                inQuotes = true;
+                currentQuote = c;
+            }
+            // If we're in quotes and current character matches the quote we're in, stop quoting
+            else if (inQuotes && c == currentQuote) {
+                inQuotes = false;
+                currentQuote = '\0';
+            } else {
+                // It's a quote character inside different quotes
+                current += c;
+            }
+        }
+        // If it's a space and we're not inside quotes, finalize the current argument
+        else if (c == ' ' && !inQuotes) {
+            if (!current.empty()) {
+                result.push_back(current);
+                current.clear();
+            }
+        } else {
+            // It's part of an argument
+            current += c;
+        }
+    }
+
+    // If there's any argument left in the buffer, add it to the result
+    if (!current.empty()) {
+        result.push_back(current);
+    }
+
+    return result;
+}
+
 #define FAIL_IN_CUSTOM_OPERATOR_METHOD \
   Py_INCREF(Py_None);                  \
   return Py_None;
@@ -522,21 +569,31 @@ bool FaustCHOP::eval(const string& code) {
   int argc = 0;
   const char** argv = new const char*[128];
 
+  #if __APPLE__
+  auto faustlibrariespath = std::filesystem::path(m_NodeInfo->pluginPath)
+                                .append("Contents")
+                                .append("Resources")
+                                .append("faust")
+                                .string();
+  #else
   auto faustlibrariespath = std::filesystem::path(m_NodeInfo->pluginPath)
                                 .parent_path()
                                 .append("faustlibraries")
                                 .string();
+  #endif
+
   argv[argc++] = "--import-dir";
   argv[argc++] = faustlibrariespath.c_str();
 
   if (std::strcmp(m_faustLibrariesPath, "") != 0) {
     argv[argc++] = "--import-dir";
     argv[argc++] = m_faustLibrariesPath;
-    // todo: allow the user to specify more args
-    // argv[argc++] = "-vec";
-    // argv[argc++] = "-vs";
-    // argv[argc++] = "128";
-    // argv[argc++] = "-dfs";
+  }
+
+  for (const std::string& arg : splitArguments(m_compile_options)) {
+    if (!arg.empty()) {
+      argv[argc++] = arg.c_str();
+    }
   }
 
   // optimization level
@@ -761,6 +818,8 @@ void FaustCHOP::execute(CHOP_Output* output, const OP_Inputs* inputs,
     m_midi_enable = inputs->getParInt("Midi");
     m_midi_virtual = inputs->getParInt("Midiinvirtual");
     m_midi_virtual_name = inputs->getParString("Midiinvirtualname");
+
+    m_compile_options = inputs->getParString("Options");
 
     const OP_DATInput* dat = inputs->getParDAT("Code");
     eval(std::string(dat->getCell(0, 0)));
@@ -1149,6 +1208,19 @@ void FaustCHOP::setupParameters(OP_ParameterManager* manager, void* reserved1) {
     sp.label = "Assets Path";
 
     OP_ParAppendResult res = manager->appendFolder(sp);
+    assert(res == OP_ParAppendResult::Success);
+  }
+
+  // Options
+  {
+    OP_StringParameter sp;
+
+    sp.name = "Options";
+    sp.label = "Options";
+
+    sp.defaultValue = "";
+
+    OP_ParAppendResult res = manager->appendString(sp);
     assert(res == OP_ParAppendResult::Success);
   }
 

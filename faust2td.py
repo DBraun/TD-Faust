@@ -141,6 +141,32 @@ def add_toggle(item) -> str:
     return text
 
 
+def get_libfaust_dir():
+    cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
+
+    if platform.system() == 'Windows':
+        libfaust_dir = 'thirdparty/libfaust/win64/Release'
+    else:
+        arch = args.arch
+        if arch == 'arm64':
+            libfaust_dir = 'thirdparty/libfaust/darwin-arm64/Release'
+            cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=arm64"
+        elif arch == 'x86_64':
+            libfaust_dir = 'thirdparty/libfaust/darwin-x64/Release'
+            cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
+        else:
+            raise RuntimeError(f"Unknown CPU architecture: {arch}.")
+
+    libfaust_dir = str(abspath(libfaust_dir))
+
+    if platform.system() == 'Windows':
+        assert isdir(libfaust_dir), "Have you run `call download_libfaust.bat`?"
+    else:
+        assert isdir(libfaust_dir), "Have you run `sh download_libfaust.sh`?"
+    
+    return libfaust_dir, cmake_build_arch
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -175,12 +201,19 @@ if __name__ == '__main__':
     dsp_file = args.dsp
     assert isfile(dsp_file), f'The requested DSP file "{dsp_file}" was not found.'
 
+    libfaust_dir, cmake_build_arch = get_libfaust_dir()
+
     # Turn the Faust code into C++ code:
     faust_script = f'faust -i "{dsp_file}" -lang cpp -cn FaustDSP -json -a faust2touchdesigner/template_faustaudio.h -o faust2touchdesigner/{op_type}.h'
-
-    print(f'Executing faust script:\n{faust_script}')
     
-    subprocess.call(shlex.split(faust_script))
+    try:
+        print(f'Executing faust script:\n{faust_script}')
+        subprocess.call(shlex.split(faust_script))
+    except FileNotFoundError as e:
+        # Maybe `faust` isn't in PATH, so default to trying the libfaust binary.
+        faust_script = f'{libfaust_dir}/bin/' + faust_script
+        print(f'Executing faust script:\n{faust_script}')
+        subprocess.call(shlex.split(faust_script))
 
     assert isfile(f'faust2touchdesigner/{op_type}.h')
 
@@ -275,28 +308,6 @@ if __name__ == '__main__':
         f.write(template)
 
     cmake_osx_deployment_target = f"-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0"
-
-    cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
-
-    if platform.system() == 'Windows':
-        libfaust_dir = 'thirdparty/libfaust/win64/Release'
-    else:
-        arch = args.arch
-        if arch == 'arm64':
-            libfaust_dir = 'thirdparty/libfaust/darwin-arm64/Release'
-            cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=arm64"
-        elif arch == 'x86_64':
-            libfaust_dir = 'thirdparty/libfaust/darwin-x64/Release'
-            cmake_build_arch = f"-DCMAKE_OSX_ARCHITECTURES=x86_64"
-        else:
-            raise RuntimeError(f"Unknown CPU architecture: {arch}.")
-
-    libfaust_dir = str(abspath(libfaust_dir))
-
-    if platform.system() == 'Windows':
-        assert isdir(libfaust_dir), "Have you run `call download_libfaust.bat`?"
-    else:
-        assert isdir(libfaust_dir), "Have you run `sh download_libfaust.sh`?"
 
     # execute CMake and build
     build_dir = f'build_{op_type}'
