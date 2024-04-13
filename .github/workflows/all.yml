@@ -53,13 +53,20 @@ jobs:
 
     - name: Make distribution
       run: |
-        Remove-Item -Recurse -Force "${{ github.workspace }}/Plugins/faustlibraries/.git"
+        Remove-Item -Recurse -Force "Plugins/faustlibraries/.git"
+        mkdir TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        move ${{ github.workspace }}/Plugins/TD-Faust.dll TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        move ${{ github.workspace }}/Plugins/Reverb.dll TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        move ${{ github.workspace }}/Plugins/sndfile.dll TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        cp -v -r ${{ github.workspace }}/Plugins/faustlibraries TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
+        7z a TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip ./TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}/* -r
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}
-        path: Plugins
+        path: TD-Faust-${{ matrix.name }}-Python${{ matrix.python-major }}.zip
+        if-no-files-found: error
 
   build-macos:
     strategy:
