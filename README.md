@@ -27,6 +27,7 @@ Examples of projects made with TD-Faust can be found [here](https://github.com/D
 
 * Browse the suggested [Documentation and Resources](https://github.com/grame-cncm/faust#documentation-and-resources).
 * Develop code in the [FAUST IDE](https://faustide.grame.fr/).
+* Read [Faust-Tutorial](https://github.com/DBraun/Faust-Tutorial) by [@DBraun](https://github.com/DBraun/).
 * Read Julius Smith's [Audio Signal Processing in FAUST](https://ccrma.stanford.edu/~jos/aspf/).
 * Browse the [Libraries](https://faustlibraries.grame.fr/) and their [source code](https://github.com/grame-cncm/faustlibraries).
 * Read the [Syntax Manual](https://faustdoc.grame.fr/manual/syntax/).
